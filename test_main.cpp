@@ -137,7 +137,7 @@ void rungui(SurfelMapping & core, GUI & gui)
     if(gui.getMode() == GUI::ShowMode::supervision)
     {
         pangolin::GlTexture *rgb = core.getTexture(GPUTexture::RGB);
-        pangolin::GlTexture *depth = core.getTexture(GPUTexture::DEPTH_METRIC_FILTERED);
+        pangolin::GlTexture *depth = core.getTexture(GPUTexture::DEPTH_RAW);
         pangolin::GlTexture *index = core.getIndexMap().indexTex()->texture;
 
         Eigen::Matrix4f pose = core.getCurrPose();
@@ -193,13 +193,6 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                                     cloud_mode == 2,
                                                                     cloud_mode == 3,
                                                                     cloud_mode == 4);
-            cloud_mode = gui.drawFilteredCloud->Get();
-            if(cloud_mode)
-                core.getFeedbackBuffer(FeedbackBuffer::FILTERED)->render(gui.s_cam.GetProjectionModelViewMatrix(),
-                                                                         pose,
-                                                                         cloud_mode == 2,
-                                                                         cloud_mode == 3,
-                                                                         cloud_mode == 4);
 
             //============ draw global model
             int surfel_mode = gui.drawGlobalModel->Get();

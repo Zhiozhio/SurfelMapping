@@ -141,8 +141,7 @@ GlobalModel::~GlobalModel()
     glDeleteBuffers(1, &uvo);
 }
 
-void GlobalModel::initialize(const FeedbackBuffer & rawFeedback,
-                             const FeedbackBuffer & filteredFeedback)
+void GlobalModel::initialize(const FeedbackBuffer & rawFeedback)
 {
     initProgram->Bind();
 
@@ -198,7 +197,6 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
                        const int & time,
                        GPUTexture * rgb,
                        GPUTexture * depthRaw,
-                       GPUTexture * depthFiltered,
                        GPUTexture * indexMap,
                        GPUTexture * vertConfMap,
                        GPUTexture * colorTimeMap,
@@ -212,11 +210,10 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
 
     dataProgram->setUniform(Uniform("cSampler", 0));
     dataProgram->setUniform(Uniform("drSampler", 1));
-    dataProgram->setUniform(Uniform("drfSampler", 2));
-    dataProgram->setUniform(Uniform("indexSampler", 3));
-    dataProgram->setUniform(Uniform("vertConfSampler", 4));
-    dataProgram->setUniform(Uniform("colorTimeSampler", 5));
-    dataProgram->setUniform(Uniform("normRadSampler", 6));
+    dataProgram->setUniform(Uniform("indexSampler", 2));
+    dataProgram->setUniform(Uniform("vertConfSampler", 3));
+    dataProgram->setUniform(Uniform("colorTimeSampler", 4));
+    dataProgram->setUniform(Uniform("normRadSampler", 5));
     dataProgram->setUniform(Uniform("time", (float)time));
 
     dataProgram->setUniform(Uniform("cam", Eigen::Vector4f(Config::cx(),
@@ -246,18 +243,15 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
     glBindTexture(GL_TEXTURE_2D, depthRaw->texture->tid);
 
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, depthFiltered->texture->tid);
-
-    glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, indexMap->texture->tid);
 
-    glActiveTexture(GL_TEXTURE4);
+    glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, vertConfMap->texture->tid);
 
-    glActiveTexture(GL_TEXTURE5);
+    glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, colorTimeMap->texture->tid);
 
-    glActiveTexture(GL_TEXTURE6);
+    glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, normRadMap->texture->tid);
 
     glBeginTransformFeedback(GL_POINTS);

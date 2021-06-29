@@ -18,8 +18,7 @@ public:
     GlobalModel();
     virtual ~GlobalModel();
 
-    void initialize(const FeedbackBuffer & rawFeedback,
-                    const FeedbackBuffer & filteredFeedback);
+    void initialize(const FeedbackBuffer & rawFeedback);
 
     static const int TEXTURE_DIMENSION;
     static const int MAX_VERTICES;
@@ -41,7 +40,6 @@ public:
               const int & time,
               GPUTexture * rgb,
               GPUTexture * depthRaw,
-              GPUTexture * depthFiltered,
               GPUTexture * indexMap,
               GPUTexture * vertConfMap,
               GPUTexture * colorTimeMap,

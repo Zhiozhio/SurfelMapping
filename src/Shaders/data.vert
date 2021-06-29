@@ -14,7 +14,6 @@ out vec4 extraNor;
 
 uniform sampler2D cSampler;
 uniform sampler2D drSampler;
-uniform sampler2D drfSampler;
 uniform isampler2D indexSampler;
 uniform sampler2D vertConfSampler;
 uniform sampler2D colorTimeSampler;
@@ -70,11 +69,8 @@ void main()
     //============ Calculate new surfels locally ============//
     vec3 vPosLocal = getVertex(texcoord.xy, x, y, cam, drSampler);
 
-    // Filtered position ONLY used for normal and radius calculation
-    vec3 vPosLocal_f = getVertex(texcoord.xy, x, y, cam, drfSampler);
-
-    // Normal and radius computed with filtered position / depth map
-    vec3 vNormLocal = getNormal(vPosLocal_f, texcoord.xy, x, y, cam, drfSampler);
+    // Normal
+    vec3 vNormLocal = getNormal(vPosLocal, texcoord.xy, x, y, cam, drSampler);
 
     //============ Find update | new | invalid ============//
 
@@ -143,7 +139,7 @@ void main()
 
         vec4 texColor = textureLod(cSampler, texcoord.xy, 0.0);
         vec3 color_n = texColor.xyz;
-        float radii_n = getRadius(vPosLocal_f.z, vNormLocal.z);
+        float radii_n = getRadius(vPosLocal.z, vNormLocal.z);
 
 
 	    // We found a point to merge with
