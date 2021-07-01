@@ -35,7 +35,7 @@ public:
 
     void showTexturebyID(std::string name, std::vector<int> &IDs);
 
-    void showVertexfRandom(std::string name);
+    void showVertexfRandom(std::string name, int stride, std::vector<int> & layout);
 
     void showVertexfbyID(std::string name, std::vector<int> &IDs);
 
@@ -61,6 +61,10 @@ public:
 
     std::vector<int> negativeIds;
     std::vector<int> zeroIds;
+
+private:
+    void print_layout(float a);
+    void print_layout(float a, float b, float c, float d);
 
 
 };

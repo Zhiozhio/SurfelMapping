@@ -12,16 +12,20 @@ GlobalModel::GlobalModel()
    count(0),
    offset(0),
    dataCount(0),
+   conflictCount(0),
    unstableCount(0),
    initProgram(loadProgramFromFile("init_unstable.vert")),
    modelProgram(loadProgramFromFile("map.vert", "map.frag")),
-   drawPointProgram(loadProgramFromFile("draw_feedback.vert", "draw_feedback.frag")),
-   drawSurfelProgram(loadProgramFromFile("draw_global_surface.vert", "draw_global_surface.geom", "draw_global_surface.frag")),
    dataProgram(loadProgramGeomFromFile("data.vert", "data.geom")),
-   updateProgram(loadProgramFromFile("update.vert", "update.frag")),
+   conflictProgram(loadProgramGeomFromFile("conflict.vert", "conflict.geom")),
+   fuseProgram(loadProgramFromFile("fuse.vert", "fuse.frag")),
+   updateConflictProgram(loadProgramFromFile("update_conf.vert", "update_conf.frag")),
    backMappingProgram(loadProgramGeomFromFile("back_map.vert", "back_map.geom")),
    unstableProgram(loadProgramGeomFromFile("unstable.vert", "unstable.geom")),
+   drawPointProgram(loadProgramFromFile("draw_feedback.vert", "draw_feedback.frag")),
+   drawSurfelProgram(loadProgramFromFile("draw_global_surface.vert", "draw_global_surface.geom", "draw_global_surface.frag")),
    renderBuffer(TEXTURE_DIMENSION, TEXTURE_DIMENSION),
+   vertConfRenderBuffer(TEXTURE_DIMENSION, TEXTURE_DIMENSION),
    modelMapVertsConfs(TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA32F, GL_RED, GL_FLOAT),
    modelMapColorsTime(TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA32F, GL_RED, GL_FLOAT),
    modelMapNormsRadii(TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA32F, GL_RED, GL_FLOAT)
@@ -38,9 +42,18 @@ GlobalModel::GlobalModel()
     glBufferData(GL_ARRAY_BUFFER, Config::numPixels() * Config::vertexSize(), nullptr, GL_DYNAMIC_COPY);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    int scale_square = IndexMap::FACTOR * IndexMap::FACTOR;
+    glGenBuffers(1, &conflictVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, conflictVbo);
+    glBufferData(GL_ARRAY_BUFFER,
+                 Config::numPixels() * scale_square * (sizeof(float) + (int)(Config::vertexSize() / 3)), // id + posConf
+                 nullptr,
+                 GL_DYNAMIC_COPY);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
     glGenBuffers(1, &unstableVbo);
     glBindBuffer(GL_ARRAY_BUFFER, unstableVbo);
-    glBufferData(GL_ARRAY_BUFFER, Config::numPixels() * Config::vertexSize() / 4, nullptr, GL_DYNAMIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, Config::numPixels() * Config::vertexSize(), nullptr, GL_DYNAMIC_COPY);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     std::vector<Eigen::Vector2f> uv;
@@ -49,8 +62,8 @@ GlobalModel::GlobalModel()
     {
         for(int j = 0; j < Config::H(); ++j)
         {
-            uv.push_back(Eigen::Vector2f(((float)i / (float)Config::W()) + 1.0 / (2 * (float)Config::W()),
-                                         ((float)j / (float)Config::H()) + 1.0 / (2 * (float)Config::H())));
+            uv.push_back(Eigen::Vector2f((i + 0.5) / (float)Config::W(),
+                                         (j + 0.5) / (float)Config::H() ) );
         }
     }
     uvSize = uv.size();
@@ -81,6 +94,9 @@ GlobalModel::GlobalModel()
     frameBuffer.AttachColour(*modelMapNormsRadii.texture);
     frameBuffer.AttachDepth(renderBuffer);
 
+    vertConfFrameBuffer.AttachColour(*modelMapVertsConfs.texture);
+    vertConfFrameBuffer.AttachDepth(renderBuffer);
+
     //------------- specify the retrieved varyings
     initProgram->Bind();
     int locInit[3] =
@@ -101,6 +117,15 @@ GlobalModel::GlobalModel()
             };
     glTransformFeedbackVaryingsNV(dataProgram->programId(), 3, dataUpdate, GL_INTERLEAVED_ATTRIBS);
     dataProgram->Unbind();
+
+    conflictProgram->Bind();
+    int conflictUpdate[2] =
+            {
+                    glGetVaryingLocationNV(conflictProgram->programId(), "conflictId0"),
+                    glGetVaryingLocationNV(conflictProgram->programId(), "vPosition0")
+            };
+    glTransformFeedbackVaryingsNV(conflictProgram->programId(), 2, conflictUpdate, GL_INTERLEAVED_ATTRIBS);
+    conflictProgram->Unbind();
 
     backMappingProgram->Bind();
     int locUpdate[3] =
@@ -193,18 +218,20 @@ void GlobalModel::initialize(const FeedbackBuffer & rawFeedback)
     CheckGlDieOnError();
 }
 
-void GlobalModel::fuse(const Eigen::Matrix4f & pose,
-                       const int & time,
-                       GPUTexture * rgb,
-                       GPUTexture * depthRaw,
-                       GPUTexture * indexMap,
-                       GPUTexture * vertConfMap,
-                       GPUTexture * colorTimeMap,
-                       GPUTexture * normRadMap,
-                       const float depthCutoff)
+void GlobalModel::dataAssociate(const Eigen::Matrix4f &pose,
+                                const int &time,
+                                GPUTexture *rgb,
+                                GPUTexture *depthRaw,
+                                GPUTexture *indexMap,
+                                GPUTexture *vertConfMap,
+                                GPUTexture *colorTimeMap,
+                                GPUTexture *normRadMap,
+                                const float depthMin,
+                                const float depthMax)
 {
-    TICK("Fuse::Data");
-    //This first part does data association and computes the vertex to merge with, storing
+    TICK("Data::Association");
+
+    //This first part does computes new vertices the vertices to merge with, storing
     //in an array that sets which vertices to update by index
     dataProgram->Bind();
 
@@ -222,10 +249,11 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
                                                            1.0 / Config::fy())));
     dataProgram->setUniform(Uniform("cols", (float)Config::W()));
     dataProgram->setUniform(Uniform("rows", (float)Config::H()));
-    dataProgram->setUniform(Uniform("scale", (float)IndexMap::FACTOR));
+    dataProgram->setUniform(Uniform("scale", IndexMap::FACTOR));
     dataProgram->setUniform(Uniform("texDim", (float)TEXTURE_DIMENSION));
     dataProgram->setUniform(Uniform("pose", pose));
-    dataProgram->setUniform(Uniform("maxDepth", depthCutoff));
+    dataProgram->setUniform(Uniform("minDepth", depthMin));
+    dataProgram->setUniform(Uniform("maxDepth", depthMax));
 
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, uvo);
@@ -233,7 +261,7 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
 
     glEnable(GL_RASTERIZER_DISCARD);
 
-    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, dataFid);
+    //glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, dataFid);
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, dataVbo);
 
     glActiveTexture(GL_TEXTURE0);
@@ -257,6 +285,7 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
     glBeginTransformFeedback(GL_POINTS);
 
     glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, countQuery);
+    dataCount = 0;
 
     glDrawArrays(GL_POINTS, 0, uvSize);
 
@@ -278,14 +307,86 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
     dataProgram->Unbind();
 
     glFinish();
-    TOCK("Fuse::Data");
 
-    CheckGlDieOnError();
+    TOCK("Data::Association");
 
-    //------------------------------------------------------------------
+    CheckGlDieOnError()
 
-    TICK("Fuse::Update");
-    //Next we update the vertices at the indexes stored in the modelMap* texturefs
+    //------------------------------------------------------------------//
+
+    TICK("Data::Conflict");
+
+    // The second part retrieve the model vertices conflict with current measurement
+    conflictProgram->Bind();
+
+    conflictProgram->setUniform(Uniform("drSampler", 0));
+    conflictProgram->setUniform(Uniform("indexSampler", 1));
+    conflictProgram->setUniform(Uniform("vertConfSampler", 2));
+
+    conflictProgram->setUniform(Uniform("cam", Eigen::Vector4f(Config::cx(),
+                                                                        Config::cy(),
+                                                                        1.0 / Config::fx(),
+                                                                        1.0 / Config::fy())));
+    conflictProgram->setUniform(Uniform("cols", (float)Config::W()));
+    conflictProgram->setUniform(Uniform("rows", (float)Config::H()));
+    conflictProgram->setUniform(Uniform("scale", IndexMap::FACTOR));
+    conflictProgram->setUniform(Uniform("minDepth", depthMin));
+    conflictProgram->setUniform(Uniform("maxDepth", depthMax));
+    conflictProgram->setUniform(Uniform("pose", pose));
+
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, uvo);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glEnable(GL_RASTERIZER_DISCARD);
+
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, conflictVbo);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, depthRaw->texture->tid);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, indexMap->texture->tid);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, vertConfMap->texture->tid);
+
+    glBeginTransformFeedback(GL_POINTS);
+
+    glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, countQuery);
+    conflictCount = 0;
+
+    glDrawArrays(GL_POINTS, 0, uvSize);
+
+    glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
+    glGetQueryObjectuiv(countQuery, GL_QUERY_RESULT, &conflictCount);
+
+    glEndTransformFeedback();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE0);
+
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+
+    glDisable(GL_RASTERIZER_DISCARD);
+
+    glDisableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    conflictProgram->Unbind();
+
+    glFinish();
+
+    TOCK("Data::Conflict");
+
+    CheckGlDieOnError()
+}
+
+void GlobalModel::update()
+{
+    TICK("Update::Fuse");
+
+    // Change model map - I
     frameBuffer.Bind();
 
     glPushAttrib(GL_VIEWPORT_BIT);
@@ -294,8 +395,8 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
 
     glDisable(GL_DEPTH_TEST);
 
-    updateProgram->Bind();
-    updateProgram->setUniform(Uniform("texDim", TEXTURE_DIMENSION));
+    fuseProgram->Bind();
+    fuseProgram->setUniform(Uniform("texDim", TEXTURE_DIMENSION));
 
     glBindBuffer(GL_ARRAY_BUFFER, dataVbo);
 
@@ -314,7 +415,7 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
     glDisableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    updateProgram->Unbind();
+    fuseProgram->Unbind();
 
     glEnable(GL_DEPTH_TEST);
 
@@ -323,14 +424,58 @@ void GlobalModel::fuse(const Eigen::Matrix4f & pose,
     frameBuffer.Unbind();
 
     glFinish();
-    TOCK("Fuse::Update");
+
+    TOCK("Update::Fuse");
+
+    CheckGlDieOnError();
+
+    //------------------------------------------------------------------//
+
+    TICK("Update::Conflict");
+
+    // Change model map - II
+    vertConfFrameBuffer.Bind();
+
+    glPushAttrib(GL_VIEWPORT_BIT);
+
+    glViewport(0, 0, vertConfRenderBuffer.width, vertConfRenderBuffer.height);
+
+    glDisable(GL_DEPTH_TEST);
+
+    updateConflictProgram->Bind();
+    updateConflictProgram->setUniform(Uniform("texDim", TEXTURE_DIMENSION));
+
+    glBindBuffer(GL_ARRAY_BUFFER, conflictVbo);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float) + (int)(Config::vertexSize() / 3), 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(float) + (int)(Config::vertexSize() / 3), reinterpret_cast<GLvoid*>(sizeof(float)));
+
+    glDrawArrays(GL_POINTS, 0, conflictCount);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    updateConflictProgram->Unbind();
+
+    glEnable(GL_DEPTH_TEST);
+
+    glPopAttrib();
+
+    vertConfFrameBuffer.Unbind();
+
+    glFinish();
+
+    TOCK("Update::Conflict");
 
     CheckGlDieOnError();
 }
 
 void GlobalModel::backMapping()
 {
-    TICK("BackMapping");
+    TICK("Back::Clean");
 
     // First we copy modelMap* texturefs to modelVbo
     backMappingProgram->Bind();
@@ -383,7 +528,7 @@ void GlobalModel::backMapping()
 
     glFinish();
 
-    TOCK("BackMapping");
+    TOCK("Back::Clean");
 
 
     CheckGlDieOnError();
@@ -412,7 +557,6 @@ void GlobalModel::concatenate()
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, Config::vertexSize(), reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f) * 2));
 
-    //glDrawTransformFeedback(GL_POINTS, dataFid);
     glDrawArrays(GL_POINTS, 0, dataCount);
 
     glDisableVertexAttribArray(0);
@@ -546,155 +690,6 @@ void GlobalModel::renderModel(pangolin::OpenGlMatrix mvp,
     program->Unbind();
 }
 
-void GlobalModel::clean(const Eigen::Matrix4f & pose,
-                        const int & time,
-                        GPUTexture * indexMap,
-                        GPUTexture * vertConfMap,
-                        GPUTexture * colorTimeMap,
-                        GPUTexture * normRadMap,
-                        GPUTexture * depthMap,
-                        const float confThreshold,
-                        std::vector<float> & graph,
-                        const int timeDelta,
-                        const float maxDepth,
-                        const bool isFern)
-{
-//    assert(graph.size() / 16 < MAX_NODES);
-//
-//    if(graph.size() > 0)
-//    {
-//        //Can be optimised by only uploading new nodes with offset
-//        glBindTexture(GL_TEXTURE_2D, deformationNodes.texture->tid);
-//        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, graph.size(), 1, GL_LUMINANCE, GL_FLOAT, graph.data());
-//    }
-//
-//    TICK("Fuse::Copy");
-//    //Next we copy the new unstable vertices from the newUnstableFid transform feedback into the global map
-//    unstableProgram->Bind();
-//    unstableProgram->setUniform(Uniform("time", time));
-//    unstableProgram->setUniform(Uniform("confThreshold", confThreshold));
-//    unstableProgram->setUniform(Uniform("scale", (float)IndexMap::FACTOR));
-//    unstableProgram->setUniform(Uniform("indexSampler", 0));
-//    unstableProgram->setUniform(Uniform("vertConfSampler", 1));
-//    unstableProgram->setUniform(Uniform("colorTimeSampler", 2));
-//    unstableProgram->setUniform(Uniform("normRadSampler", 3));
-//    unstableProgram->setUniform(Uniform("nodeSampler", 4));
-//    unstableProgram->setUniform(Uniform("depthSampler", 5));
-//    unstableProgram->setUniform(Uniform("nodes", (float)(graph.size() / 16)));
-//    unstableProgram->setUniform(Uniform("nodeCols", (float)NODE_TEXTURE_DIMENSION));
-//    unstableProgram->setUniform(Uniform("timeDelta", timeDelta));
-//    unstableProgram->setUniform(Uniform("maxDepth", maxDepth));
-//    unstableProgram->setUniform(Uniform("isFern", (int)isFern));
-//
-//    Eigen::Matrix4f t_inv = pose.inverse();
-//    unstableProgram->setUniform(Uniform("t_inv", t_inv));
-//
-//    unstableProgram->setUniform(Uniform("cam", Eigen::Vector4f(Intrinsics::getInstance().cx(),
-//                                                         Intrinsics::getInstance().cy(),
-//                                                         Intrinsics::getInstance().fx(),
-//                                                         Intrinsics::getInstance().fy())));
-//    unstableProgram->setUniform(Uniform("cols", (float)Resolution::getInstance().cols()));
-//    unstableProgram->setUniform(Uniform("rows", (float)Resolution::getInstance().rows()));
-//
-//    glBindBuffer(GL_ARRAY_BUFFER, vbos[target].first);
-//
-//    glEnableVertexAttribArray(0);
-//    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, Vertex::SIZE, 0);
-//
-//    glEnableVertexAttribArray(1);
-//    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, Vertex::SIZE, reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f)));
-//
-//    glEnableVertexAttribArray(2);
-//    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, Vertex::SIZE, reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f) * 2));
-//
-//    glEnable(GL_RASTERIZER_DISCARD);
-//
-//    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, vbos[renderSource].second);
-//
-//    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbos[renderSource].first);
-//
-//    glBeginTransformFeedback(GL_POINTS);
-//
-//    glActiveTexture(GL_TEXTURE0);
-//    glBindTexture(GL_TEXTURE_2D, indexMap->texture->tid);
-//
-//    glActiveTexture(GL_TEXTURE1);
-//    glBindTexture(GL_TEXTURE_2D, vertConfMap->texture->tid);
-//
-//    glActiveTexture(GL_TEXTURE2);
-//    glBindTexture(GL_TEXTURE_2D, colorTimeMap->texture->tid);
-//
-//    glActiveTexture(GL_TEXTURE3);
-//    glBindTexture(GL_TEXTURE_2D, normRadMap->texture->tid);
-//
-//    glActiveTexture(GL_TEXTURE4);
-//    glBindTexture(GL_TEXTURE_2D, deformationNodes.texture->tid);
-//
-//    glActiveTexture(GL_TEXTURE5);
-//    glBindTexture(GL_TEXTURE_2D, depthMap->texture->tid);
-//
-//    glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, countQuery);
-//
-//    glDrawTransformFeedback(GL_POINTS, vbos[target].second);
-//
-//    glBindBuffer(GL_ARRAY_BUFFER, newUnstableVbo);
-//
-//    glEnableVertexAttribArray(0);
-//    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, Vertex::SIZE, 0);
-//
-//    glEnableVertexAttribArray(1);
-//    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, Vertex::SIZE, reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f)));
-//
-//    glEnableVertexAttribArray(2);
-//    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, Vertex::SIZE, reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f) * 2));
-//
-//    glDrawTransformFeedback(GL_POINTS, newUnstableFid);
-//
-//    glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
-//
-//    glGetQueryObjectuiv(countQuery, GL_QUERY_RESULT, &count);
-//
-//    glEndTransformFeedback();
-//
-//    glDisable(GL_RASTERIZER_DISCARD);
-//
-//    glBindTexture(GL_TEXTURE_2D, 0);
-//    glActiveTexture(GL_TEXTURE0);
-//
-//    glDisableVertexAttribArray(0);
-//    glDisableVertexAttribArray(1);
-//    glDisableVertexAttribArray(2);
-//    glBindBuffer(GL_ARRAY_BUFFER, 0);
-//    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-//
-//    unstableProgram->Unbind();
-//
-//    std::swap(target, renderSource);
-//
-//    glFinish();
-//    TOCK("Fuse::Copy");
-}
-
-unsigned int GlobalModel::getCount()
-{
-    return count;
-}
-
-unsigned int GlobalModel::getOffset()
-{
-    return offset;
-}
-
-unsigned int GlobalModel::getDataCount()
-{
-    return dataCount;
-}
-
-unsigned int GlobalModel::getUnstableCount()
-{
-    return unstableCount;
-}
-
 pangolin::GlTexture * GlobalModel::getModelMapVC()
 {
     return modelMapVertsConfs.texture;
@@ -720,9 +715,19 @@ std::pair<GLuint, GLuint> GlobalModel::getData()
     return {dataVbo, dataCount};
 }
 
+std::pair<GLuint, GLuint> GlobalModel::getConflict()
+{
+    return {conflictVbo, conflictCount};
+}
+
 std::pair<GLuint, GLuint> GlobalModel::getUnstable()
 {
     return {unstableVbo, unstableCount};
+}
+
+unsigned int GlobalModel::getOffset()
+{
+    return offset;
 }
 
 Eigen::Vector4f * GlobalModel::downloadMap()

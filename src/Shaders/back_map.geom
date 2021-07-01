@@ -14,7 +14,7 @@ out vec4 vNormRad0;
 
 void main()
 {
-    if(vColorTime[0].y >= 0)
+    if(vPosition[0].w > 0)
     {
         vPosition0 = vPosition[0];
         vColorTime0 = vColorTime[0];

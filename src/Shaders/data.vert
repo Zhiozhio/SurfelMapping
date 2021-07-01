@@ -7,11 +7,6 @@ out vec4 vPosition;
 out vec4 vColor;
 out vec4 vNormRad;
 
-flat out int emitExtra;
-out vec4 extraPos;
-out vec4 extraCol;
-out vec4 extraNor;
-
 uniform sampler2D cSampler;
 uniform sampler2D drSampler;
 uniform isampler2D indexSampler;
@@ -22,9 +17,10 @@ uniform sampler2D normRadSampler;
 uniform vec4 cam; //cx, cy, 1/fx, 1/fy
 uniform float cols;
 uniform float rows;
-uniform float scale;
+uniform int scale;
 uniform float texDim;
 uniform mat4 pose;
+uniform float minDepth;
 uniform float maxDepth;
 uniform float time;
 
@@ -60,80 +56,42 @@ float angleBetween(vec3 a, vec3 b)
 
 void main()
 {
-    emitExtra = 0;
-
     // Raw data pixel, should be guaranteed to be in bounds and centred on pixels
     float x = texcoord.x * cols;
     float y = texcoord.y * rows;
 
-    //============ Calculate new surfels locally ============//
-    vec3 vPosLocal = getVertex(texcoord.xy, x, y, cam, drSampler);
+    // unit plane coordinates
+    float xl = (x - cam.x) * cam.z;
+    float yl = (y - cam.y) * cam.w;
 
-    // Normal
-    vec3 vNormLocal = getNormal(vPosLocal, texcoord.xy, x, y, cam, drSampler);
+    // unit plane vector
+    vec3 ray = vec3(xl, yl, 1);
+    float lambda = sqrt(xl * xl + yl * yl + 1);  // length of ray
 
-    //============ Find update | new | invalid ============//
+    // pixel and sub pixel size
+    float pix_size_x = 1.0f / cols;
+    float pix_size_y = 1.0f / rows;
 
-    // If this point is actually a valid vertex && valid neighbours
-    if(int(x) % 2 == int(time) % 2 && int(y) % 2 == int(time) % 2 && 
-       checkNeighbours(texcoord.xy, drSampler) &&
-       vPosLocal.z > 0 && vPosLocal.z < maxDepth)
+    float subpix_size_x = 1.0f / (cols * scale);
+    float subpix_size_y = 1.0f / (rows * scale);
+
+    // intensity of this pixel
+    float value = float(texture(drSampler, texcoord));
+
+
+    //============ Associate with Model Surfels ============//
+
+    // If this point is actually a valid vertex
+    if(checkNeighbours(texcoord.xy, drSampler) && value > minDepth && value < maxDepth)
     {
-	    float indexXStep = (1.0f / (cols * scale));
-	    float indexYStep = (1.0f / (rows * scale));
-        float windowSize = 1;  // half window size (pixels, not subpixel)
+        //============ Calculate new surfels locally ============//
 
-        int counter = 0;
-        int bestID = 0;
-	    float bestDist = 1000;
-        vec3 posLocal_o;
-        float c_o;
-        vec4 normRadLocal_o;
-        vec3 color_o;
-        float initTime_o;
+        // position
+        vec3 vPosLocal = getVertex(texcoord.xy, x, y, cam, drSampler);
+        // normal
+        vec3 vNormLocal = getNormal(vPosLocal, texcoord.xy, x, y, cam, drSampler);
 
-        float xl = (x - cam.x) * cam.z;  // unit plane coordinates
-        float yl = (y - cam.y) * cam.w;
-        float lambda = sqrt(xl * xl + yl * yl + 1);
-        vec3 ray = vec3(xl, yl, 1);
-	    
-	    for(float i = texcoord.x - (scale * indexXStep * windowSize); i < texcoord.x + (scale * indexXStep * windowSize) + indexXStep; i += indexXStep)
-	    {
-	        for(float j = texcoord.y - (scale * indexYStep * windowSize); j < texcoord.y + (scale * indexYStep * windowSize) + indexYStep; j += indexYStep)
-	        {
-	           int currentID = int(textureLod(indexSampler, vec2(i, j), 0.0));
-	           
-	           if(currentID > 0)
-	           {
-                   vec4 vertConf = textureLod(vertConfSampler, vec2(i, j), 0.0);
-
-                   if(abs((vertConf.z * lambda) - (vPosLocal.z * lambda)) < 1.0)  // eyesight ray depth test // todo
-                   {
-                       float dist = length(cross(ray, vertConf.xyz)) / length(ray);  // eyesight ray distance test todo should also consider confidence
-                       
-                       vec4 normRad = textureLod(normRadSampler, vec2(i, j), 0.0);
-
-                       // closest            41 degree                  28 degree
-                       if(dist < bestDist && (abs(normRad.z) < 0.75f || abs(angleBetween(normRad.xyz, vNormLocal.xyz)) < 0.5f))  // todo
-                       {
-                           counter++;
-                           bestDist = dist;
-                           bestID = currentID;
-                           posLocal_o = vertConf.xyz;
-                           c_o = vertConf.w;
-                           normRadLocal_o = normRad;
-                           vec4 colorTime = textureLod(colorTimeSampler, vec2(i, j), 0.0);
-                           color_o = decodeColor(colorTime.x);
-                           initTime_o = colorTime.z;
-                       }
-                   }
-	           }
-	        }
-	    }
-
-
-        // Complete information of this new surfel
-        // confidence todo
+        // confidence todo new method
         float maxRadDist2 = (cols / 2) * (cols / 2) + (rows / 2) * (rows / 2);
         float c_n = confidence(maxRadDist2, x, y, 1.0);
 
@@ -141,12 +99,66 @@ void main()
         vec3 color_n = texColor.xyz;
         float radii_n = getRadius(vPosLocal.z, vNormLocal.z);
 
+        //============ Find update | new  ============//
 
-	    // We found a point to merge with
-	    if(counter > 0)
-	    {
+        int updateCounter = 0;
+        int bestID = 0;
+        float bestDist = 1000;
+        vec3 posLocal_o;
+        float c_o;
+        vec4 normRadLocal_o;
+        vec3 color_o;
+        float initTime_o;
+
+        int windowSize = scale + 2 * 2;  // kernel window size in subpixel
+
+        // find in near subpixels
+        for(int i = 0; i < windowSize; ++i)
+        {
+            for(int j = 0; j < windowSize; ++j)
+            {
+                // get texture coordinate
+                float sub_x = texcoord.x - subpix_size_x * (windowSize - 1) / 2 + subpix_size_x * i;
+                float sub_y = texcoord.y - subpix_size_y * (windowSize - 1) / 2 + subpix_size_y * j;
+
+                if(sub_x < 0.0 || sub_x > 1.0 || sub_y < 0.0 || sub_y > 1.0)
+                continue;
+
+                int currentID = int(textureLod(indexSampler, vec2(sub_x, sub_y), 0.0));
+
+                if(currentID > 0) // if it has a projection here
+                {
+                    // get old vertex
+                    vec4 vertConf = textureLod(vertConfSampler, vec2(sub_x, sub_y), 0.0);
+
+                    if(abs(vertConf.z * lambda - vPosLocal.z * lambda) < 0.5)  // eyesight ray depth test // todo threshold
+                    {
+                        float dist = length(cross(ray, vertConf.xyz)) / length(ray);  // eyesight ray distance test
+
+                        vec4 normRad = textureLod(normRadSampler, vec2(sub_x, sub_y), 0.0);
+
+                        // closest                                                        28 degree
+                        if(dist < bestDist && abs(angleBetween(normRad.xyz, vNormLocal.xyz)) < 0.5f)  // todo consider color
+                        {
+                            updateCounter++;
+                            bestDist = dist;
+                            bestID = currentID;
+                            posLocal_o = vertConf.xyz;
+                            c_o = vertConf.w;
+                            normRadLocal_o = normRad;
+                            vec4 colorTime = textureLod(colorTimeSampler, vec2(sub_x, sub_y), 0.0);
+                            color_o = decodeColor(colorTime.x);
+                            initTime_o = colorTime.z;
+                        }
+                    }
+                }
+            }
+        }
+
+        if(updateCounter > 0) // We found a point to merge with
+        {
             // compute the merged surfel with its original ID
-            if(radii_n < (1.0 + 0.5) * normRadLocal_o.w)
+            if(radii_n < 1.5 * normRadLocal_o.w)
             {
                 vec3 posLocal_n = ((c_n * vPosLocal.xyz) + (c_o * posLocal_o)) / (c_n + c_o);
                 vPosition = pose * vec4(posLocal_n, 1.0);
@@ -176,10 +188,9 @@ void main()
                 vNormRad.xyz = normalize(vNormRad.xyz);
                 vNormRad.w = normRadLocal_o.w;
             }
-	    }
-	    else
-	    {
-            // construct the new unstable surfel
+        }
+        else  // construct the new unstable surfel
+        {
             // position
             vPosition = pose * vec4(vPosLocal, 1);
             vPosition.w = c_n;
@@ -193,27 +204,7 @@ void main()
             vColor.y = -1.f;                           // marks as new unstable
             vColor.z = time;
             vColor.w = time;
-
-            // if model is invalid  todo we should consider radius
-            int current_id = int(textureLod(indexSampler, texcoord, 0.0));
-            vec4 vert = textureLod(vertConfSampler, texcoord.xy, 0.0);
-            if(current_id > 0 && vert.z < vPosLocal.z)
-            {
-                emitExtra = 1;
-
-                extraPos = pose * vec4(vert.xyz, 1.0);
-                extraPos.w = vert.w - 1.1;         // decrease the confidence
-
-                extraNor = textureLod(normRadSampler, texcoord.xy, 0.0);
-                extraNor.xyz = mat3(pose) * extraNor.xyz;
-                extraNor.xyz = normalize(extraNor.xyz);
-
-                extraCol = textureLod(colorTimeSampler, texcoord.xy, 0.0);
-                extraCol.y = float(current_id);          // marks as the ID of model surfel to be updated
-                extraCol.w = time;
-            }
-
-	    }
+        }
     }
     else  //============ Other vertex ============//
     {

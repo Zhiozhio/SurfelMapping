@@ -20,7 +20,7 @@ void main()
 
     int mark = int(round(vColorTime.y));
 
-    // Filter the surfel to be updated
+    // Filter the fused surfel
     if(mark >= 0)
     {
         // get position by index
@@ -35,19 +35,9 @@ void main()
 
         gl_Position = vec4(x, y, 0.0, 1.0);
 
-        // check confidence
-        if(vPosition.w > 0.)
-        {
-            vPosition0 = vPosition;
-            vColorTime0 = vColorTime;
-            vNormRad0 = vNormRad;
-        }
-        else
-        {
-            vPosition0 = vec4(0.0, 0.0, 0.0, 0.0);
-            vColorTime0 = vec4(0.0, -1.0, 0.0, 0.0);  // y marks as removal
-            vNormRad0 = vec4(0.0, 0.0, 0.0, 0.0);
-        }
+        vPosition0 = vPosition;
+        vColorTime0 = vColorTime;
+        vNormRad0 = vNormRad;
     }
 
     // Filter the new surfel

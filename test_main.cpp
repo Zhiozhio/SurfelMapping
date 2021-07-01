@@ -287,6 +287,7 @@ int main(int argc, char ** argv)
     SurfelMapping core;
 
 
+    int lastModel = 0;
     while (reader.getNext())
     {
         // III. test ground truth
@@ -296,13 +297,18 @@ int main(int argc, char ** argv)
         //============ Process Current Frame ============//
         core.processFrame(reader.rgb, reader.depth, &reader.gtPose);
 
-
-
+        
 
         cout << reader.currentFrameId << '\n';
-        cout << "dataProgram get vertices: " << core.getGlobalModel().getDataCount() << '\n';
-        cout << "the offset (old remainder): " << core.getGlobalModel().getOffset() << '\n';
-        cout << "==> model vbo vertices:" << core.getGlobalModel().getCount() << endl;
+        cout << "dataProgram get vertices (fuse | new): " << core.getGlobalModel().getData().second << '\n';
+        cout << "conflict vertices: " << core.getGlobalModel().getConflict().second << '\n';
+        cout << "the offset (old remainder): " << core.getGlobalModel().getOffset() << " "
+             << "(so the removed is: " << lastModel - core.getGlobalModel().getOffset() << ")" <<'\n';
+        cout << "the new vertices: " << core.getGlobalModel().getUnstable().second << " "
+             << "(so the fused is: " << core.getGlobalModel().getData().second - core.getGlobalModel().getUnstable().second << ")" << '\n';
+        cout << "==> model vbo vertices:" << core.getGlobalModel().getModel().second << endl;
+
+        lastModel = core.getGlobalModel().getModel().second;
 
 /*
         // Checker analysis
@@ -325,71 +331,49 @@ int main(int argc, char ** argv)
             cout << "Data VBO:  ";
             checkDataTypes(core.checker->vertexfs["Data"], core.getGlobalModel().getData().second);
 
-            cout << "Unstable VBO: ";
-            core.checker->checkVertexf("Unstable");
 
-//            cout << "Update: " << endl;
-//            showIds(updateId);
-//            core.checker->showVertexfbyID(core.getGlobalModel().getData().first, updateSample);
-//
-//            cout << "Model map II - The Updated: " << endl;
-//            core.checker->showTexturebyID("PosConfII", updateId);
-//            core.checker->showTexturebyID("ColorTimeII", updateId);
-//            core.checker->showTexturebyID("NormRadII", updateId);
+
+//            cout << "Unstable VBO: ";
+//            core.checker->checkVertexf("Unstable");
+
+            cout << "---- Data VBO - The Fused ---- " << endl;
+            showIds(updateSample);
+            showIds(updateId);
+            core.checker->showVertexfbyID("Data", updateSample);
+
+            cout << "Model map II - The fused: " << endl;
+            core.checker->showTexturebyID("PosConfII", updateId);
+            core.checker->showTexturebyID("ColorTimeII", updateId);
+            core.checker->showTexturebyID("NormRadII", updateId);
 //
 //            cout << "Removal: " << endl;
 //            showIds(removeId);
 //            core.checker->showVertexfbyID(core.getGlobalModel().getData().first, removeSample);
-//
-//            cout << "Model map II - The Removal: " << endl;
-//            core.checker->showTexturebyID("PosConfII", removeId);
-//            core.checker->showTexturebyID("ColorTimeII", removeId);
-//            core.checker->showTexturebyID("NormRadII", removeId);
+
+
+            cout << "---- Conflict VBO ---- " << endl;
+            core.checker->genRandomIds(20, 0, core.getGlobalModel().getConflict().second);
+            //            core.checker->showIds();
+            vector<int> layout{1, 4};
+            core.checker->showVertexfRandom("Conflict", 5, layout);
+
+
+            cout << "Model map II - The Removal: " << endl;
+            removeId.clear();
+            for(auto id : core.checker->ids)
+            {
+                unsigned int stride = 5;
+                unsigned int offset = 0;
+                removeId.push_back(static_cast<int>(core.checker->vertexfs["Conflict"][id * stride + offset]));
+            }
+            core.checker->showTexturebyID("PosConfII", removeId);
+            core.checker->showTexturebyID("ColorTimeII", removeId);
+            core.checker->showTexturebyID("NormRadII", removeId);
 
 
 
             //cout << "---- Model map II ---- " << endl;
             //core.checker->checkTexture4f("ColorTimeII");
-
-
-            cout << "---- Model II VBO ----  " << endl;
-            core.checker->checkVertexf("ModelII");
-
-            cout << "---- Model New VBO ----  " << endl;
-            core.checker->checkVertexf("Model New");
-
-            cout << "Model New the updated part: " << endl;
-            core.checker->checkVertexf("Model New", 0, core.getGlobalModel().getOffset());
-
-            cout << "Model New the new part: " << endl;
-            core.checker->checkVertexf("Model New", core.getGlobalModel().getOffset(), core.getGlobalModel().getCount());
-
-
-            cout << "==== New part from Data VBO: " << endl;
-            //vector<int> dataNew(unstableId.begin(), unstableId.begin() + 20);
-            //vector<int> dataNew(unstableId.begin() + 3002 - 44 - 20, unstableId.begin() + 3002 - 44);
-            vector<int> dataNew(unstableId.begin() + 3002 - 44 - 1, unstableId.begin() + 3002 - 44 - 1 + 20);
-            core.checker->showVertexfbyID("Data", dataNew);
-
-            cout << "==== New part in Unstable VBO: " << endl;
-            vector<int> unstableNew;
-            for(int i = 0; i < 20; ++i)
-            {
-                //unstableNew.push_back(i);
-                //modelNew.push_back(i + core.getGlobalModel().getOffset() + 3002 - 44 - 20);
-                unstableNew.push_back(i + 3002 - 44 - 1);
-            }
-            core.checker->showVertexfbyID("Unstable", unstableNew);
-
-            cout << "==== New part from Model New: " << endl;
-            vector<int> modelNew;
-            for(int i = 0; i < 20; ++i)
-            {
-                //modelNew.push_back(i + core.getGlobalModel().getOffset());
-                //modelNew.push_back(i + core.getGlobalModel().getOffset() + 3002 - 44 - 20);
-                modelNew.push_back(i + core.getGlobalModel().getOffset() + 3002 - 44 - 1);
-            }
-            core.checker->showVertexfbyID("Model New", modelNew);
 
         }
 

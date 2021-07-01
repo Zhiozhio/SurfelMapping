@@ -159,31 +159,33 @@ void Checker::showTexturebyID(std::string name, std::vector<int> &IDs)
     printf("\n");
 }
 
-void Checker::showVertexfRandom(std::string name)
+void Checker::showVertexfRandom(std::string name, int stride, std::vector<int> & layout)
 {
     float * vert = vertexfs[name];
-    int stride = 4 * 3;
 
-    for(int i = 0; i < ids.size(); ++i)
-    {
-        unsigned int base = ids[i] * stride;
-        printf("| %12.2f %12.2f %12.2f %12.2f |", vert[base], vert[base + 1], vert[base + 2], vert[base + 3]);
-    }
-    printf("\n");
+    unsigned int offset = 0;
 
-    for(int i = 0; i < ids.size(); ++i)
+    for(int num : layout)
     {
-        unsigned int base = ids[i] * stride + 4;
-        printf("| %12.2f %12.2f %12.2f %12.2f |", vert[base], vert[base + 1], vert[base + 2], vert[base + 3]);
+        for(int i = 0; i < ids.size(); ++i)
+        {
+            unsigned int base = ids[i] * stride + offset;
+            switch(num)
+            {
+                case 1:
+                    print_layout(vert[base]);
+                    break;
+                case 4:
+                    print_layout(vert[base], vert[base + 1], vert[base + 2], vert[base + 3]);
+                    break;
+                default:
+                    printf("[Checker::showVertexfRandom] Not valid layout!");
+            }
+        }
+        printf("\n");
+        offset += num;
     }
-    printf("\n");
 
-    for(int i = 0; i < ids.size(); ++i)
-    {
-        unsigned int base = ids[i] * stride + 8;
-        printf("| %12.2f %12.2f %12.2f %12.2f |", vert[base], vert[base + 1], vert[base + 2], vert[base + 3]);
-    }
-    printf("\n");
 }
 
 void Checker::showVertexfbyID(std::string name, std::vector<int> &IDs)
@@ -308,4 +310,14 @@ void Checker::checkVertexf(const std::string& name, int lbound, int hbound)
     printf("Total: %d, abnormal negative: %d, zero: %d\n", hbound - lbound, negative, zero);
     if(negative)
         printf("abnormal ids from %d to %d, range %d\n", negativeMinId, negativeMaxId, negativeMaxId - negativeMinId + 1);
+}
+
+void Checker::print_layout(float a)
+{
+    printf("| %51.2f |", a);
+}
+
+void Checker::print_layout(float a, float b, float c, float d)
+{
+    printf("| %12.2f %12.2f %12.2f %12.2f |", a, b, c, d);
 }

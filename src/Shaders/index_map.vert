@@ -42,7 +42,7 @@ void main()
     float x = 0;
     float y = 0;
         
-    if(vPosHome.z >= maxDepth || vPosHome.z <= 0 || time - vColorTime.w > timeDelta)
+    if(vPosHome.z >= maxDepth * 1.5 || vPosHome.z <= 0 || time - vColorTime.w > timeDelta)
     {
         x = -10;
         y = -10;

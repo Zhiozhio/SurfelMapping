@@ -18,7 +18,7 @@
 
 #include "IndexMap.h"
 
-const int IndexMap::FACTOR = 1;
+const int IndexMap::FACTOR = 1;  // subpixel scale, MAX is 3 for compatible to conflictProgram shader
 
 IndexMap::IndexMap()
 : indexProgram(loadProgramFromFile("index_map.vert", "index_map.frag")),

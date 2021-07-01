@@ -145,22 +145,28 @@ void SurfelMapping::processFrame(const unsigned char *rgb, const unsigned short 
 
 //        checker->retrieveTexture1i("IndexMap", indexMap.indexTex()->texture);
 
-        globalModel.fuse(currPose,
-                         tick,
-                         textures[GPUTexture::RGB],
-                         textures[GPUTexture::DEPTH_METRIC],
-                         indexMap.indexTex(),
-                         indexMap.vertConfTex(),
-                         indexMap.colorTimeTex(),
-                         indexMap.normalRadTex(),
-                         farClipDepth);
+        globalModel.dataAssociate(currPose,
+                                  tick,
+                                  textures[GPUTexture::RGB],
+                                  textures[GPUTexture::DEPTH_METRIC],
+                                  indexMap.indexTex(),
+                                  indexMap.vertConfTex(),
+                                  indexMap.colorTimeTex(),
+                                  indexMap.normalRadTex(),
+                                  nearClipDepth,
+                                  farClipDepth);
 
 //        checker->retrieveVertexf("Data", globalModel.getData().first, globalModel.getData().second);
+//        checker->retrieveVertexf("Conflict", globalModel.getConflict().first, globalModel.getConflict().second);
+
+        globalModel.update();
 
 
-//        checker->retrieveTexture4f("PosConfII", globalModel.getModelMapVC(), globalModel.getCount());
-//        checker->retrieveTexture4f("ColorTimeII", globalModel.getModelMapCT(), globalModel.getCount());
-//        checker->retrieveTexture4f("NormRadII", globalModel.getModelMapNR(), globalModel.getCount());
+
+
+//        checker->retrieveTexture4f("PosConfII", globalModel.getModelMapVC(), globalModel.getModel().second);
+//        checker->retrieveTexture4f("ColorTimeII", globalModel.getModelMapCT(), globalModel.getModel().second);
+//        checker->retrieveTexture4f("NormRadII", globalModel.getModelMapNR(), globalModel.getModel().second);
 
         globalModel.backMapping();
 

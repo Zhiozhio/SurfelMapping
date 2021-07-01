@@ -19,16 +19,11 @@
 #version 330 core
 
 layout(points) in;
-layout(points, max_vertices = 2) out;
+layout(points, max_vertices = 1) out;
 
 in vec4 vPosition[];
 in vec4 vColor[];
 in vec4 vNormRad[];
-
-flat in int emitExtra[];
-in vec4 extraPos[];
-in vec4 extraCol[];
-in vec4 extraNor[];
 
 out vec4 vPosition0;
 out vec4 vColor0;
@@ -36,7 +31,7 @@ out vec4 vNormRad0;
 
 void main() 
 {
-    //Emit a vertex if either we have an update to store, or a new unstable vertex to store
+    //Emit a vertex if either we have an update, or a new unstable vertex
 	float mark = vColor[0].y;
     if(mark > -5.f)
     {
@@ -46,15 +41,5 @@ void main()
 
 	    EmitVertex();
 		EndPrimitive();
-
-		if(emitExtra[0] > 0)
-		{
-			vPosition0 = extraPos[0];
-			vColor0 = extraCol[0];
-			vNormRad0 = extraNor[0];
-
-			EmitVertex();
-			EndPrimitive();
-		}
     }
 }
