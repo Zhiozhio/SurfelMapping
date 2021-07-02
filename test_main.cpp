@@ -137,7 +137,7 @@ void rungui(SurfelMapping & core, GUI & gui)
     if(gui.getMode() == GUI::ShowMode::supervision)
     {
         pangolin::GlTexture *rgb = core.getTexture(GPUTexture::RGB);
-        pangolin::GlTexture *depth = core.getTexture(GPUTexture::DEPTH_RAW);
+        pangolin::GlTexture *depth = core.getTexture(GPUTexture::DEPTH_METRIC);
         pangolin::GlTexture *index = core.getIndexMap().indexTex()->texture;
 
         Eigen::Matrix4f pose = core.getCurrPose();
@@ -221,7 +221,7 @@ void rungui(SurfelMapping & core, GUI & gui)
             //            gui.normalizeDepth(rgb, 1.0f, 60.0f);
             //            gui.displayImg("rgb", gui.getDepthNorm());
 
-            gui.normalizeDepth(depth, 1.0f, 60.0f);
+            gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
 
 
             //                int * index_buffer = new int[Config::numPixels()];
@@ -297,7 +297,7 @@ int main(int argc, char ** argv)
         //============ Process Current Frame ============//
         core.processFrame(reader.rgb, reader.depth, &reader.gtPose);
 
-        
+
 
         cout << reader.currentFrameId << '\n';
         cout << "dataProgram get vertices (fuse | new): " << core.getGlobalModel().getData().second << '\n';

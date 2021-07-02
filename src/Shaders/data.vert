@@ -110,7 +110,7 @@ void main()
         vec3 color_o;
         float initTime_o;
 
-        int windowSize = scale + 2 * 2;  // kernel window size in subpixel
+        int windowSize = scale + 2 * 1;  // kernel window size in subpixel
 
         // find in near subpixels
         for(int i = 0; i < windowSize; ++i)
