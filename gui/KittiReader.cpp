@@ -24,7 +24,7 @@ KittiReader::KittiReader(std::string datasetDir, bool estimateDepth, int subLeve
     while(timesIn >> time_tmp)
         times.push_back(time_tmp);
 
-    depthDir = datasetDir_ + "/monodepth2/model_3_png";
+    depthDir = datasetDir_ + "/PSMNet";
     rgbDir = datasetDir_ + "/image_2";
 
     bool tmp = loadCalibration();
