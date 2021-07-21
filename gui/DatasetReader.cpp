@@ -5,13 +5,15 @@
 #include "DatasetReader.h"
 
 
-DatasetReader::DatasetReader(std::string datasetDir, bool estimateDepth)
+DatasetReader::DatasetReader(std::string datasetDir, bool estimateDepth, bool useSemantic)
 : depth(nullptr),
   rgb(nullptr),
   depthReadBuffer(nullptr),
   imageReadBuffer(nullptr),
+  semanticReadBuffer(nullptr),
   datasetDir_(std::move(datasetDir)),
   estimate_depth(estimateDepth),
+  use_semantic(useSemantic),
   currentFrameId(-1),
   width_(0),
   height_(0),

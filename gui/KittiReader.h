@@ -18,7 +18,7 @@
 class KittiReader : public DatasetReader
 {
 public:
-    KittiReader(std::string datasetDir, bool estimateDepth, int subLevel, bool groundTruth);
+    KittiReader(std::string datasetDir, bool estimateDepth, bool useSemantic, int subLevel, bool groundTruth);
 
     ~KittiReader() override;
 
@@ -43,9 +43,10 @@ private:
 
     std::string depthDir;
     std::string rgbDir;
+    std::string semanticDir;
     std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> * groundTruth;
 
-    bool getCore(const std::string &depth_file, const std::string &rgb_file);
+    bool getCore(const std::string &depth_file, const std::string &rgb_file, const std::string &semantic_file);
 };
 
 #endif //ELASTICFUSION_DATASETREADER_H

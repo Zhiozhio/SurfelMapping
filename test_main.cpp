@@ -138,7 +138,7 @@ void rungui(SurfelMapping & core, GUI & gui)
     {
         pangolin::GlTexture *rgb = core.getTexture(GPUTexture::RGB);
         pangolin::GlTexture *depth = core.getTexture(GPUTexture::DEPTH_METRIC);
-        pangolin::GlTexture *index = core.getIndexMap().indexTex()->texture;
+        pangolin::GlTexture *semantic = core.getTexture("SEMANTIC");
 
         Eigen::Matrix4f pose = core.getCurrPose();
 
@@ -217,28 +217,16 @@ void rungui(SurfelMapping & core, GUI & gui)
 
             //============ draw raw image data (must be after "cam")
             gui.displayImg("rgb", rgb);
-
-            //            gui.normalizeDepth(rgb, 1.0f, 60.0f);
-            //            gui.displayImg("rgb", gui.getDepthNorm());
+            //gui.normalizeDepth(rgb, 1.0f, 60.0f);
+            //gui.displayImg("rgb", gui.getDepthNorm());
 
             gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
-
-
-            //                int * index_buffer = new int[Config::numPixels()];
-            //
-            //                depth->Download(index_buffer, GL_RED, GL_R16UI);
-            //
-            //                for(int i = 0; i < 100; ++i)
-            //                {
-            //                    printf("%d ", index_buffer[rand() % Config::numPixels()]);
-            //                }
-            //                printf("\n");
-            //
-            //                cv::imshow("DEBUG", debug);
-            //                cv::waitKey(0);
-
-
             gui.displayImg("depth", gui.depthNormTexture);
+
+
+            gui.processSemantic(semantic);
+            gui.displayImg("semantic", gui.semanticTexture);
+
 
             gui.postCall();
 
@@ -255,7 +243,7 @@ int main(int argc, char ** argv)
 {
     std::string kittiDir(argv[1]);
 
-    KittiReader reader(kittiDir, false, 0, true);
+    KittiReader reader(kittiDir, false, true, 0, true);
 
     // I. test reader
     if(false)
@@ -295,10 +283,15 @@ int main(int argc, char ** argv)
             cout << reader.gtPose << endl;
 
         //============ Process Current Frame ============//
-        core.processFrame(reader.rgb, reader.depth, &reader.gtPose);
+        core.processFrame(reader.rgb, reader.depth, reader.semantic, &reader.gtPose);
 
 
 
+        core.checker->genRandomIds(20, 0, core.checker->texNum["sem"]);
+        core.checker->showTextureuRandom("sem", 1);
+
+
+/*
         cout << reader.currentFrameId << '\n';
         cout << "dataProgram get vertices (fuse | new): " << core.getGlobalModel().getData().second << '\n';
         cout << "conflict vertices: " << core.getGlobalModel().getConflict().second << '\n';
@@ -310,7 +303,7 @@ int main(int argc, char ** argv)
 
         lastModel = core.getGlobalModel().getModel().second;
 
-/*
+
         // Checker analysis
 //        core.checker->genRandomIds(20, core.getGlobalModel().getCount());
 
@@ -377,7 +370,7 @@ int main(int argc, char ** argv)
 
         }
 
-*/
+*/  // debug GlobalModel
 
         // show what you want
         rungui(core, gui);

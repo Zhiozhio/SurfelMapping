@@ -19,7 +19,13 @@ public:
     ~Checker();
 
 
-    void retrieveTexture4f(std::string name, pangolin::GlTexture * img, int num);
+    void retrieveTexture1u(std::string name, pangolin::GlTexture * img, int num = 0);
+
+    void retrieveTexture1f(std::string name, pangolin::GlTexture * img, int num = 0);
+
+    void retrieveTexture2f(std::string name, pangolin::GlTexture * img, int num = 0);
+
+    void retrieveTexture4f(std::string name, pangolin::GlTexture * img, int num = 0);
 
     void retrieveTexture1i(std::string name, pangolin::GlTexture * img);
 
@@ -29,9 +35,9 @@ public:
 
     void showIds();
 
-    void showTexture4fRandom(std::string name);
+    void showTexturefRandom(std::string name, int channel);
 
-    void showTexture1iRandom(std::string name);
+    void showTextureuRandom(std::string name, int channel);
 
     void showTexturebyID(std::string name, std::vector<int> &IDs);
 
@@ -43,6 +49,8 @@ public:
 
     void checkVertexf(const std::string& name, int lbound = 0, int hbound = 0);
 
+    void histogramTexturef(const std::string& name, float lbound, float hbound, int numSections, bool countBound, int numChannel, int channel);
+
 
 
 
@@ -53,6 +61,7 @@ public:
     std::map<std::string, int> texNum;
     std::map<std::string, float *> texturefs;
     std::map<std::string, int *> textureis;
+    std::map<std::string, unsigned int *> textureus;
 
     std::map<std::string, int> vertexNums;
     std::map<std::string, float *> vertexfs;
@@ -64,7 +73,12 @@ public:
 
 private:
     void print_layout(float a);
+    void print_layout(float a, float b);
     void print_layout(float a, float b, float c, float d);
+
+    void print_layout(unsigned int a);
+    void print_layout(unsigned int a, unsigned int b);
+    void print_layout(unsigned int a, unsigned int b, unsigned int c, unsigned int d);
 
 
 };

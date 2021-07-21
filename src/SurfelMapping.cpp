@@ -66,10 +66,10 @@ void SurfelMapping::createTextures()
                                                         GL_RED,
                                                         GL_FLOAT);
 
-    //textures[GPUTexture::DEPTH_METRIC_FILTERED] = new GPUTexture(w, h,
-    //                                                             GL_R32F,
-    //                                                             GL_RED,
-    //                                                             GL_FLOAT);
+    textures["SEMANTIC"] = new GPUTexture(w, h,
+                                          GL_R8UI,
+                                          GL_RED_INTEGER,
+                                          GL_UNSIGNED_BYTE);
 
 }
 
@@ -95,12 +95,22 @@ void SurfelMapping::createFeedbackBuffers()
     //feedbackBuffers[FeedbackBuffer::FILTERED] = new FeedbackBuffer(loadProgramGeomFromFile("surfel_feedback.vert", "surfel_feedback.geom"));
 }
 
-void SurfelMapping::processFrame(const unsigned char *rgb, const unsigned short *depth, const Eigen::Matrix4f *gtPose)
+void SurfelMapping::processFrame(const unsigned char *rgb,
+                                 const unsigned short *depth,
+                                 const unsigned char * semantic,
+                                 const Eigen::Matrix4f *gtPose)
 {
     TICK("Run");
 
-    textures[GPUTexture::DEPTH_RAW]->texture->Upload(depth, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
     textures[GPUTexture::RGB]->texture->Upload(rgb, GL_RGB, GL_UNSIGNED_BYTE);
+
+    if(depth)
+        textures[GPUTexture::DEPTH_RAW]->texture->Upload(depth, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
+
+    if(semantic)
+        textures["SEMANTIC"]->texture->Upload(semantic, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
+
+    checker->retrieveTexture1u("sem", textures["SEMANTIC"]->texture);
 
     TICK("Preprocess");
 

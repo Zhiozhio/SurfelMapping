@@ -13,7 +13,7 @@
 class DatasetReader
 {
 public:
-    DatasetReader(std::string datasetDir, bool estimateDepth);
+    DatasetReader(std::string datasetDir, bool estimateDepth, bool useSemantic);
 
     virtual ~DatasetReader();
 
@@ -58,6 +58,7 @@ public:
 
     unsigned short * depth;
     unsigned char * rgb;
+    unsigned char * semantic;
     int currentFrameId;
     double time;
 
@@ -65,6 +66,7 @@ public:
 protected:
     unsigned char * depthReadBuffer;
     unsigned char * imageReadBuffer;
+    unsigned char * semanticReadBuffer;
 
     const std::string datasetDir_;
     unsigned int width_;
@@ -73,6 +75,7 @@ protected:
     float fx_, fy_, cx_, cy_;
 
     bool estimate_depth;
+    bool use_semantic;
     std::vector<double> times;
 };
 

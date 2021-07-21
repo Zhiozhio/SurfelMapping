@@ -39,6 +39,93 @@ void Checker::genRandomIds(int num, int min, int max)
     }
 }
 
+void Checker::retrieveTexture1u(std::string name, pangolin::GlTexture *img, int num)
+{
+    auto iter = texturefs.find(name);
+    if(iter != texturefs.end())
+    {
+        // update
+        img->Download(iter->second, GL_RED, GL_UNSIGNED_INT);
+
+        if(num > 0)
+            texNum[name] = num;
+    }
+    else
+    {
+        // new
+        unsigned int * texture = new unsigned int[img->height * img->width];
+
+        img->Download(texture, GL_RED_INTEGER, GL_UNSIGNED_INT);
+
+        textureus[name] = texture;
+
+        if(num == 0)
+            texNum[name] = img->height * img->width;
+        else
+            texNum[name] = num;
+
+        CheckGlDieOnError();
+    }
+}
+
+void Checker::retrieveTexture1f(std::string name, pangolin::GlTexture *img, int num)
+{
+    auto iter = texturefs.find(name);
+    if(iter != texturefs.end())
+    {
+        // update
+        img->Download(iter->second, GL_RED, GL_FLOAT);
+
+        if(num > 0)
+            texNum[name] = num;
+    }
+    else
+    {
+        // new
+        float * texture = new float[img->height * img->width];
+
+        img->Download(texture, GL_RED, GL_FLOAT);
+
+        texturefs[name] = texture;
+
+        if(num == 0)
+            texNum[name] = img->height * img->width;
+        else
+            texNum[name] = num;
+
+        CheckGlDieOnError();
+    }
+}
+
+void Checker::retrieveTexture2f(std::string name, pangolin::GlTexture *img, int num)
+{
+    auto iter = texturefs.find(name);
+    if(iter != texturefs.end())
+    {
+        // update
+        img->Download(iter->second, GL_RG, GL_FLOAT);
+
+        if(num > 0)
+            texNum[name] = num;
+    }
+    else
+    {
+        // new
+        float * texture = new float[img->height * img->width * 2];
+
+        img->Download(texture, GL_RG, GL_FLOAT);
+
+        texturefs[name] = texture;
+
+        if(num == 0)
+            texNum[name] = img->height * img->width;
+        else
+            texNum[name] = num;
+
+        CheckGlDieOnError();
+    }
+}
+
 void Checker::retrieveTexture4f(std::string name, pangolin::GlTexture *img, int num)
 {
     auto iter = texturefs.find(name);
@@ -120,28 +207,52 @@ void Checker::showIds()
     printf("\n");
 }
 
-void Checker::showTexture4fRandom(std::string name)
+void Checker::showTexturefRandom(std::string name, int channel)
 {
     float * img = texturefs[name];
-    int c = 4;
 
     for(int i = 0; i < ids.size(); ++i)
     {
-        unsigned int base = ids[i] * c;
-        printf("| %12.2f %12.2f %12.2f %12.2f |", img[base], img[base + 1], img[base + 2], img[base + 3]);
+        unsigned int base = ids[i] * channel;
+        switch(channel)
+        {
+            case 1:
+                print_layout(img[base]);
+                break;
+            case 2:
+                print_layout(img[base], img[base + 1]);
+                break;
+            case 4:
+                print_layout(img[base], img[base + 1], img[base + 2], img[base + 3]);
+                break;
+            default:
+                printf("[Checker::showTexturefRandom] Not valid layout!");
+        }
     }
     printf("\n");
 }
 
-void Checker::showTexture1iRandom(std::string name)
+void Checker::showTextureuRandom(std::string name, int channel)
 {
-    int * img = textureis[name];
-    int c = 1;
+    unsigned int * img = textureus[name];
 
     for(int i = 0; i < ids.size(); ++i)
     {
-        unsigned int base = ids[i] * c;
-        printf("| %10d |", img[base]);
+        unsigned int base = ids[i] * channel;
+        switch(channel)
+        {
+            case 1:
+                print_layout(img[base]);
+                break;
+            case 2:
+                print_layout(img[base], img[base + 1]);
+                break;
+            case 4:
+                print_layout(img[base], img[base + 1], img[base + 2], img[base + 3]);
+                break;
+            default:
+                printf("[Checker::showTexturefRandom] Not valid layout!");
+        }
     }
     printf("\n");
 }
@@ -174,6 +285,9 @@ void Checker::showVertexfRandom(std::string name, int stride, std::vector<int> &
             {
                 case 1:
                     print_layout(vert[base]);
+                    break;
+                case 2:
+                    print_layout(vert[base], vert[base + 1]);
                     break;
                 case 4:
                     print_layout(vert[base], vert[base + 1], vert[base + 2], vert[base + 3]);
@@ -312,12 +426,93 @@ void Checker::checkVertexf(const std::string& name, int lbound, int hbound)
         printf("abnormal ids from %d to %d, range %d\n", negativeMinId, negativeMaxId, negativeMaxId - negativeMinId + 1);
 }
 
+void Checker::histogramTexturef(const std::string &name, float lbound, float hbound, int numSections, bool countBound, int numChannel, int channel)
+{
+    int sections[numSections];
+    for(int i = 0; i < numSections; ++i)
+        sections[i] = 0;
+    int numLowBound = 0;
+    int numUpBound = 0;
+    int total = 0;
+
+    float interval = (hbound - lbound) / numSections;
+    float bounds[numSections + 1];
+    for(int i = 0; i <= numSections; ++i)
+        bounds[i] = lbound + i * interval;
+
+    float * ptr = texturefs[name];
+    for(int i = 0; i < texNum[name]; ++i)
+    {
+        float value = ptr[numChannel * i + channel];
+        if(value < 0.001)
+            value = 0;
+
+        for(int j = 0; j < numSections; ++j)
+        {
+            if(value >= bounds[j] && value < bounds[j + 1])
+            {
+                sections[j]++;
+                total++;
+            }
+        }
+        if(value == hbound)
+        {
+            sections[numSections - 1]++;
+            total++;
+        }
+
+        if(countBound)
+        {
+            if(value == lbound)
+                numLowBound++;
+            if(value == hbound)
+                numUpBound++;
+        }
+    }
+
+    for(int j = 0; j < numSections; ++j)
+    {
+        float frac = (float)sections[j] / total;
+        printf("[%4.2f, %4.2f): %6d, %f%% ", bounds[j], bounds[j+1], sections[j], 100.0 * frac);
+        for(int k = 0; k < int(100 * frac + 0.5); ++k)
+        {
+            printf("|");
+        }
+        printf("\n");
+    }
+    if(countBound)
+    {
+        printf("Left: %d, Right: %d\n", numLowBound, numUpBound);
+    }
+}
+
+
 void Checker::print_layout(float a)
 {
     printf("| %51.2f |", a);
 }
 
+void Checker::print_layout(float a, float b)
+{
+    printf("| %25.2f %25.2f |", a, b);
+}
+
 void Checker::print_layout(float a, float b, float c, float d)
 {
     printf("| %12.2f %12.2f %12.2f %12.2f |", a, b, c, d);
+}
+
+void Checker::print_layout(unsigned int a)
+{
+    printf("| %53u |", a);
+}
+
+void Checker::print_layout(unsigned int a, unsigned int b)
+{
+    printf("| %27u %27u |", a, b);
+}
+
+void Checker::print_layout(unsigned int a, unsigned int b, unsigned int c, unsigned int d)
+{
+    printf("| %14u %14u %14u %14u |", a, b, c, d);
 }

@@ -50,6 +50,9 @@ public:
     void normalizeDepth(pangolin::GlTexture * img, const float & minVal, const float & maxVal);
 
 
+    void processSemantic(pangolin::GlTexture * img);
+
+
     void drawFXAA(pangolin::OpenGlMatrix mvp,
                   pangolin::OpenGlMatrix mv,
                   const std::pair<GLuint, GLuint> & model,
@@ -118,6 +121,10 @@ public:
     pangolin::GlRenderBuffer * depthNormRenderBuffer;
     std::shared_ptr<Shader> normalizeProgram;
 
+    pangolin::GlFramebuffer * semanticFrameBuffer;
+    pangolin::GlTexture * semanticTexture;
+    pangolin::GlRenderBuffer * semanticRenderBuffer;
+    std::shared_ptr<Shader> showSemanticProgram;
 
 };
 

@@ -30,7 +30,8 @@ public:
      * @param gtPose optional input SE3 pose (if provided, we don't attempt to perform tracking)
      */
     void processFrame(const unsigned char * rgb,
-                      const unsigned short * depth,
+                      const unsigned short * depth = nullptr,
+                      const unsigned char * semantic = nullptr,
                       const Eigen::Matrix4f * gtPose = 0);
 
     /**

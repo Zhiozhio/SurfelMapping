@@ -11,8 +11,8 @@
 #include <opencv2/highgui.hpp>
 #include <iomanip>
 
-KittiReader::KittiReader(std::string datasetDir, bool estimateDepth, int subLevel, bool groundTruth)
-: DatasetReader(datasetDir, estimateDepth),
+KittiReader::KittiReader(std::string datasetDir, bool estimateDepth, bool useSemantic, int subLevel, bool groundTruth)
+: DatasetReader(datasetDir, estimateDepth, useSemantic),
   sub_level(subLevel)
 {
     struct stat info;
@@ -35,6 +35,11 @@ KittiReader::KittiReader(std::string datasetDir, bool estimateDepth, int subLeve
         tmp = loadGroundTruth();
         assert(tmp && "load ground truth failed!");
     }
+
+    if(useSemantic)
+    {
+        semanticDir = datasetDir_ + "/semantics";
+    }
 }
 
 KittiReader::~KittiReader()
@@ -55,10 +60,13 @@ bool KittiReader::getNext()
     std::stringstream ss;
     ss << std::setfill('0') << std::setw(6) << currentFrameId;
 
-    std::string current_depth_file(depthDir + "/" + ss.str() + ".png");
     std::string current_rgb_file(rgbDir + "/" + ss.str() + ".png");
 
-    return getCore(current_depth_file, current_rgb_file);
+    std::string current_depth_file = estimate_depth ? "" : depthDir + "/" + ss.str() + ".png";
+
+    std::string current_semantic_file = use_semantic ? semanticDir + "/" + ss.str() + ".png" : "";
+
+    return getCore(current_depth_file, current_rgb_file, current_semantic_file);
 }
 
 bool KittiReader::getLast()
@@ -71,51 +79,41 @@ bool KittiReader::getLast()
     std::stringstream ss;
     ss << std::setfill('0') << std::setw(6) << currentFrameId;
 
-    std::string current_depth_file(depthDir + "/" + ss.str() + ".png");
     std::string current_rgb_file(rgbDir + "/" + ss.str() + ".png");
 
-    return getCore(current_depth_file, current_rgb_file);
+    std::string current_depth_file = estimate_depth ? "" : depthDir + "/" + ss.str() + ".png";
+
+    std::string current_semantic_file = use_semantic ? semanticDir + "/" + ss.str() + ".png" : "";
+
+    return getCore(current_depth_file, current_rgb_file, current_semantic_file);
 }
 
-bool KittiReader::getCore(const std::string &depth_file, const std::string &rgb_file)
+bool KittiReader::getCore(const std::string &depth_file, const std::string &rgb_file, const std::string &semantic_file)
 {
-    // read depth & rgb images
-    cv::Mat dep_mat = cv::imread(depth_file, cv::IMREAD_ANYDEPTH);
+    // rgb images
     cv::Mat rgb_mat = cv::imread(rgb_file, cv::IMREAD_COLOR);
-    if(dep_mat.data == nullptr || rgb_mat.data == nullptr)
+    if(rgb_mat.data == nullptr)
         return false;
 
-    assert(height_origin == dep_mat.rows && width_origin == dep_mat.cols && "depth sizes do not match!");
     assert(height_origin == rgb_mat.rows && width_origin == rgb_mat.cols && "RGB sizes do not match!");
-
-    if(!depthReadBuffer && numPixels_origin > 0)
-        depthReadBuffer = new unsigned char[numPixels_origin * 2];
 
     if(!imageReadBuffer && numPixels_origin > 0)
         imageReadBuffer = new unsigned char[numPixels_origin * 3];
 
-    auto tmp = memcpy(depthReadBuffer, dep_mat.data, numPixels_origin * 2);
-    assert(tmp && "depth copy failed!");
-    depth = (unsigned short *)depthReadBuffer;
-
-    tmp = memcpy(imageReadBuffer, rgb_mat.data, numPixels_origin * 3);
+    auto tmp = memcpy(imageReadBuffer, rgb_mat.data, numPixels_origin * 3);
     assert(tmp && "image copy failed!");
     rgb = (unsigned char *)imageReadBuffer;
 
     if(sub_level)
     {
-        unsigned short * depth_tmp = depth;
         unsigned char * rgb_tmp = rgb;
 
-        depth = new unsigned short[numPixels_];
         rgb = new unsigned char[numPixels_ * 3];
 
         for(int row = 0; row < height_; ++row)
         {
             for(int col = 0; col < width_; ++col)
             {
-                depth[row * width_ + col] = depth_tmp[2 * row * width_origin + 2 * col];
-
                 rgb[(row * width_ + col) * 3 + 0] = rgb_tmp[(2 * row * width_origin + 2 * col) * 3 + 0];
                 rgb[(row * width_ + col) * 3 + 1] = rgb_tmp[(2 * row * width_origin + 2 * col) * 3 + 1];
                 rgb[(row * width_ + col) * 3 + 2] = rgb_tmp[(2 * row * width_origin + 2 * col) * 3 + 2];
@@ -127,6 +125,79 @@ bool KittiReader::getCore(const std::string &depth_file, const std::string &rgb_
     for(int i = 0; i < numPixels_ * 3; i += 3)
     {
         std::swap(rgb[i + 0], rgb[i + 2]);
+    }
+
+    // read depth file
+    if(!depth_file.empty())
+    {
+        cv::Mat dep_mat = cv::imread(depth_file, cv::IMREAD_ANYDEPTH);
+        if(dep_mat.data == nullptr)
+            return false;
+
+        assert(height_origin == dep_mat.rows && width_origin == dep_mat.cols && "depth sizes do not match!");
+
+        if(!depthReadBuffer && numPixels_origin > 0)
+            depthReadBuffer = new unsigned char[numPixels_origin * 2];
+
+        tmp = memcpy(depthReadBuffer, dep_mat.data, numPixels_origin * 2);
+        assert(tmp && "depth copy failed!");
+        depth = (unsigned short *)depthReadBuffer;
+
+        if(sub_level)
+        {
+            unsigned short * depth_tmp = depth;
+
+            depth = new unsigned short[numPixels_];
+
+            for(int row = 0; row < height_; ++row)
+            {
+                for(int col = 0; col < width_; ++col)
+                {
+                    depth[row * width_ + col] = depth_tmp[2 * row * width_origin + 2 * col];
+                }
+            }
+        }
+    }
+
+    // read semantic file
+    if(!semantic_file.empty())
+    {
+        cv::Mat sem_mat = cv::imread(semantic_file, cv::IMREAD_ANYDEPTH);
+        if(sem_mat.data == nullptr)
+            return false;
+
+        assert(height_origin == sem_mat.rows && width_origin == sem_mat.cols && "semantic sizes do not match!");
+
+//        for(int i = 0; i < numPixels_origin; ++i)
+//        {
+//            unsigned char a = sem_mat.data[i];
+//            unsigned int b = (unsigned int)sem_mat.data[i];
+//            sem_mat.data[i] *= 10;
+//        }
+//        cv::imshow("semantic", sem_mat);
+//        cv::waitKey(0);
+
+        if(!semanticReadBuffer && numPixels_origin > 0)
+            semanticReadBuffer = new unsigned char[numPixels_origin];
+
+        tmp = memcpy(semanticReadBuffer, sem_mat.data, numPixels_origin);
+        assert(tmp && "semantic copy failed!");
+        semantic = (unsigned char *)semanticReadBuffer;
+
+        if(sub_level)
+        {
+            unsigned char * semantic_tmp = semantic;
+
+            semantic = new unsigned char[numPixels_];
+
+            for(int row = 0; row < height_; ++row)
+            {
+                for(int col = 0; col < width_; ++col)
+                {
+                    depth[row * width_ + col] = semantic_tmp[2 * row * width_origin + 2 * col];
+                }
+            }
+        }
     }
 
     return true;

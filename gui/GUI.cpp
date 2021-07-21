@@ -58,6 +58,8 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
     pangolin::Display("depth").SetAspect(rawWidth / rawHeight).SetLock(pangolin::LockRight, pangolin::LockBottom);
 
 
+
+
     if(mode == ShowMode::supervision)
     {
         int multi_height = std::min(rawHeight * 2 * rawWidth / width, height / 4);
@@ -67,16 +69,27 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
                 .AddDisplay(pangolin::Display("rgb"))
                 .AddDisplay(pangolin::Display("depth"));
 
+        pangolin::Display("semantic").SetAspect(rawWidth / rawHeight)
+                .SetLock(pangolin::LockLeft, pangolin::LockTop)
+                .SetBounds(pangolin::Attach::Pix(height - multi_height / 3), 1.0, pangolin::Attach::Pix(panel), 1.0);
+
 
         // show raw depth image
         depthNormFrameBuffer = new pangolin::GlFramebuffer;
-        depthNormTexture = new pangolin::GlTexture(width, height, GL_RGBA, true, 0, GL_RGBA, GL_FLOAT);
-        depthNormRenderBuffer = new pangolin::GlRenderBuffer(width, height);
+        depthNormTexture = new pangolin::GlTexture(rawWidth, rawHeight, GL_RGBA, true, 0, GL_RGBA, GL_FLOAT);
+        depthNormRenderBuffer = new pangolin::GlRenderBuffer(rawWidth, rawHeight);
         depthNormFrameBuffer->AttachColour(*depthNormTexture);
         depthNormFrameBuffer->AttachDepth(*depthNormRenderBuffer);
 
+        semanticFrameBuffer = new pangolin::GlFramebuffer;
+        semanticTexture = new pangolin::GlTexture(rawWidth, rawHeight, GL_RGBA, true, 0, GL_RGBA, GL_FLOAT);
+        semanticRenderBuffer = new pangolin::GlRenderBuffer(rawWidth, rawHeight);
+        semanticFrameBuffer->AttachColour(*semanticTexture);
+        semanticFrameBuffer->AttachDepth(*semanticRenderBuffer);
+
         normalizeProgram = loadProgramFromFile("empty.vert", "quad.geom", "depth_norm_float.frag");
         debugProgram = loadProgramFromFile("empty.vert", "debug_quad.geom", "debug.frag");
+        showSemanticProgram = loadProgramFromFile("empty.vert", "quad.geom", "show_semantic.frag");
 
         // set panel
         pause = new pangolin::Var<bool>("ui.Pause", true, true);
@@ -192,6 +205,53 @@ void GUI::normalizeDepth(pangolin::GlTexture * img, const float &minVal, const f
     normalizeProgram->Unbind();
 
     glPopAttrib();
+
+    glFinish();
+}
+
+void GUI::processSemantic(pangolin::GlTexture *img)
+{
+    img->Bind();
+
+    semanticFrameBuffer->Bind();
+
+    glPushAttrib(GL_VIEWPORT_BIT);
+
+    glViewport(0, 0, semanticRenderBuffer->width, semanticRenderBuffer->height);
+
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    showSemanticProgram->Bind();
+
+    showSemanticProgram->setUniform(Uniform("eSampler", 0));
+    showSemanticProgram->setUniform(Uniform("class0", Eigen::Vector3f(128,128,128)));
+    showSemanticProgram->setUniform(Uniform("class1", Eigen::Vector3f(0,255,0)));
+    showSemanticProgram->setUniform(Uniform("class2", Eigen::Vector3f(0,0,255)));
+    showSemanticProgram->setUniform(Uniform("class3", Eigen::Vector3f(255,255,0)));
+    showSemanticProgram->setUniform(Uniform("class4", Eigen::Vector3f(128,0,0)));
+    showSemanticProgram->setUniform(Uniform("class5", Eigen::Vector3f(255,0,255)));
+    showSemanticProgram->setUniform(Uniform("class6", Eigen::Vector3f(128,128,0)));
+    showSemanticProgram->setUniform(Uniform("class7", Eigen::Vector3f(0,128,0)));
+    showSemanticProgram->setUniform(Uniform("class8", Eigen::Vector3f(128,0,128)));
+    showSemanticProgram->setUniform(Uniform("class9", Eigen::Vector3f(0,128,128)));
+    showSemanticProgram->setUniform(Uniform("class10", Eigen::Vector3f(0,255,255)));
+    showSemanticProgram->setUniform(Uniform("class11", Eigen::Vector3f(0,0,128)));
+    showSemanticProgram->setUniform(Uniform("class12", Eigen::Vector3f(245,222,179)));
+    showSemanticProgram->setUniform(Uniform("class13", Eigen::Vector3f(255,0,0)));
+    showSemanticProgram->setUniform(Uniform("class14", Eigen::Vector3f(210,105,30)));
+    showSemanticProgram->setUniform(Uniform("class15", Eigen::Vector3f(244,164,96)));
+    showSemanticProgram->setUniform(Uniform("class16", Eigen::Vector3f(119,136,153)));
+    showSemanticProgram->setUniform(Uniform("class17", Eigen::Vector3f(255,20,147)));
+    showSemanticProgram->setUniform(Uniform("class18", Eigen::Vector3f(138,43,226)));
+
+    glDrawArrays(GL_POINTS, 0, 1);
+
+    showSemanticProgram->Unbind();
+
+    glPopAttrib();
+
+    semanticFrameBuffer->Unbind();
 
     glFinish();
 }
