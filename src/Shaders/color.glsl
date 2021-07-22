@@ -16,19 +16,22 @@
  *
  */
 
-float encodeColor(vec3 c)
+float encodeColor(vec3 c, uint s)  // color & semantic
 {
-    int rgb = int(round(c.x * 255.0f));
-    rgb = (rgb << 8) + int(round(c.y * 255.0f));
-    rgb = (rgb << 8) + int(round(c.z * 255.0f));
-    return float(rgb);
+    uint srgb = s;
+    srgb = (srgb << 8) + uint(round(c.r * 255.0f));
+    srgb = (srgb << 8) + uint(round(c.g * 255.0f));
+    srgb = (srgb << 8) + uint(round(c.b * 255.0f));
+    return uintBitsToFloat(srgb);
 }
 
-vec3 decodeColor(float c)
+uvec4 decodeColor(float srgb)
 {
-    vec3 col;
-    col.x = float(int(c) >> 16 & 0xFF) / 255.0f;
-    col.y = float(int(c) >> 8 & 0xFF) / 255.0f;
-    col.z = float(int(c) & 0xFF) / 255.0f;
-    return col;
+    uint sc = floatBitsToUint(srgb);
+    uvec4 scol;
+    scol.x = (sc >> 24) & 0xFFu;
+    scol.y = (sc >> 16) & 0xFFu;
+    scol.z = (sc >> 8) & 0xFFu;
+    scol.w = sc & 0xFFu;
+    return scol;
 }

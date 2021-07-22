@@ -41,7 +41,9 @@ void main()
         }
         else if(colorType == 2)  // draw color
         {
-            vColor = vec4(decodeColor(color.x), 1.0);
+            uvec4 srgb = decodeColor(color.x);
+            vec3 rgb = vec3(srgb.yzw) / 255.f;
+            vColor = vec4(rgb, 1.0);
         }
         else  // draw mono (a little normal)
         {

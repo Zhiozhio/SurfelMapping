@@ -34,6 +34,7 @@ class FeedbackBuffer
 
         void compute(pangolin::GlTexture * color,
                      pangolin::GlTexture * depth,
+                     pangolin::GlTexture * semantic,
                      const int & time,
                      const float depthCutoff);
 

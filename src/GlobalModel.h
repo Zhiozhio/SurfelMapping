@@ -40,6 +40,7 @@ public:
                        const int & time,
                        GPUTexture * rgb,
                        GPUTexture * depthRaw,
+                       GPUTexture * semantic,
                        GPUTexture * indexMap,
                        GPUTexture * vertConfMap,
                        GPUTexture * colorTimeMap,

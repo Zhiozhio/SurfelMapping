@@ -66,10 +66,10 @@ void SurfelMapping::createTextures()
                                                         GL_RED,
                                                         GL_FLOAT);
 
-    textures["SEMANTIC"] = new GPUTexture(w, h,
-                                          GL_R8UI,
-                                          GL_RED_INTEGER,
-                                          GL_UNSIGNED_BYTE);
+    textures[GPUTexture::SEMANTIC] = new GPUTexture(w, h,
+                                                    GL_R8UI,
+                                                    GL_RED_INTEGER,
+                                                    GL_UNSIGNED_BYTE);
 
 }
 
@@ -106,7 +106,7 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
         textures[GPUTexture::DEPTH_RAW]->texture->Upload(depth, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
 
     if(semantic)
-        textures["SEMANTIC"]->texture->Upload(semantic, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
+        textures[GPUTexture::SEMANTIC]->texture->Upload(semantic, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
 
 //    checker->retrieveTexture1u("sem", textures["SEMANTIC"]->texture);
 
@@ -166,6 +166,7 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
                                   tick,
                                   textures[GPUTexture::RGB],
                                   textures[GPUTexture::DEPTH_FILTERED],
+                                  textures[GPUTexture::SEMANTIC],
                                   indexMap.indexTex(),
                                   indexMap.vertConfTex(),
                                   indexMap.colorTimeTex(),
@@ -281,6 +282,7 @@ void SurfelMapping::computeFeedbackBuffers()
     TICK("feedbackBuffers");
     feedbackBuffers[FeedbackBuffer::RAW]->compute(textures[GPUTexture::RGB]->texture,
                                                   textures[GPUTexture::DEPTH_FILTERED]->texture,
+                                                  textures[GPUTexture::SEMANTIC]->texture,
                                                   tick,
                                                   farClipDepth);
     TOCK("feedbackBuffers");

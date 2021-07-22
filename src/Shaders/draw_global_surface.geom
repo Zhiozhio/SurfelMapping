@@ -49,7 +49,8 @@ void main()
         }
         else if(colorType0[0] == 2)
         {
-            vColor0 = decodeColor(vColor[0].x);
+            uvec4 srgb = decodeColor(vColor[0].x);
+            vColor0 = vec3(srgb.yzw) / 255.f;
         }
         else if(colorType0[0] == 3)
         {

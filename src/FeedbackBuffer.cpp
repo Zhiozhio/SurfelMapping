@@ -84,6 +84,7 @@ FeedbackBuffer::~FeedbackBuffer()
 
 void FeedbackBuffer::compute(pangolin::GlTexture * color,
                              pangolin::GlTexture * depth,
+                             pangolin::GlTexture * semantic,
                              const int & time,
                              const float depthCutoff)
 {
@@ -101,6 +102,7 @@ void FeedbackBuffer::compute(pangolin::GlTexture * color,
     program->setUniform(Uniform("time", time));
     program->setUniform(Uniform("gSampler", 0));
     program->setUniform(Uniform("cSampler", 1));
+    program->setUniform(Uniform("sSampler", 2));
     program->setUniform(Uniform("maxDepth", depthCutoff));
 
     glEnableVertexAttribArray(0);
@@ -121,10 +123,12 @@ void FeedbackBuffer::compute(pangolin::GlTexture * color,
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, color->tid);
 
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, semantic->tid);
+
     glDrawArrays(GL_POINTS, 0, Config::numPixels());
 
     glBindTexture(GL_TEXTURE_2D, 0);
-
     glActiveTexture(GL_TEXTURE0);
 
     glEndTransformFeedback();

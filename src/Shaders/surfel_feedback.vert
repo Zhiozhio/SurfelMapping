@@ -11,6 +11,7 @@ out float zVal;
 
 uniform sampler2D gSampler;
 uniform sampler2D cSampler;
+uniform usampler2D sSampler;
 uniform vec4 cam; //cx, cy, 1/fx, 1/fy
 uniform float cols;
 uniform float rows;
@@ -29,6 +30,7 @@ void main()
 
     vPosition = vec4(getVertex(texcoord.xy, x, y, cam, gSampler), 1);
     vColor = textureLod(cSampler, texcoord.xy, 0.0);
+    uvec4 vClass = texture(sSampler, texcoord.xy);
     
     vec3 vNormLocal = getNormal(vPosition.xyz, texcoord.xy, x, y, cam, gSampler);
     vNormRad = vec4(vNormLocal, getRadius(vPosition.z, vNormLocal.z));
@@ -42,11 +44,14 @@ void main()
         zVal = vPosition.z;
     }
 
-    float maxRadDist2 = (cols / 2) * (cols / 2) + (rows / 2) * (rows / 2);  //sqrt((width * 0.5)^2 + (height * 0.5)^2)
+    //float maxRadDist2 = (cols / 2) * (cols / 2) + (rows / 2) * (rows / 2);  //sqrt((width * 0.5)^2 + (height * 0.5)^2)
     
-    vPosition.w = confidence(maxRadDist2, x, y, 1.0f);
-    
-    vColor.x = encodeColor(vColor.xyz);
+    //vPosition.w = confidence(maxRadDist2, x, y, 1.0f);
+
+    vPosition.w = 0.9;
+
+
+    vColor.x = encodeColor(vColor.xyz, vClass.r);
     
     vColor.y = 0;
     //Timestamp

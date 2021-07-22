@@ -9,6 +9,7 @@ out vec4 vNormRad;
 
 uniform sampler2D cSampler;
 uniform sampler2D drSampler;
+uniform usampler2D sSampler;
 uniform isampler2D indexSampler;
 uniform sampler2D vertConfSampler;
 uniform sampler2D colorTimeSampler;
@@ -92,12 +93,18 @@ void main()
         vec3 vNormLocal = getNormal(vPosLocal, texcoord.xy, x, y, cam, drSampler);
 
         // confidence todo new method
-        float maxRadDist2 = (cols / 2) * (cols / 2) + (rows / 2) * (rows / 2);
-        float c_n = confidence(maxRadDist2, x, y, 1.0);
+        //float maxRadDist2 = (cols / 2) * (cols / 2) + (rows / 2) * (rows / 2);
+        //float c_n = confidence(maxRadDist2, x, y, 1.0);
+        float c_n = 0.9;
 
+        // color
         vec4 texColor = textureLod(cSampler, texcoord.xy, 0.0);
         vec3 color_n = texColor.xyz;
         float radii_n = getRadius(vPosLocal.z, vNormLocal.z);
+
+        // semantic
+        uint sem_n = uint(texture(sSampler, texcoord.xy));
+
 
         //============ Find update | new  ============//
 
@@ -110,7 +117,7 @@ void main()
         vec3 color_o;
         float initTime_o;
 
-        int windowSize = scale + 2 * 1;  // kernel window size in subpixel
+        int windowSize = scale + 2 * 0;  // kernel window size in subpixel
 
         // find in near subpixels
         for(int i = 0; i < windowSize; ++i)
@@ -130,8 +137,12 @@ void main()
                 {
                     // get old vertex
                     vec4 vertConf = textureLod(vertConfSampler, vec2(sub_x, sub_y), 0.0);
+                    // get old semantic & color
+                    vec4 colorTime = textureLod(colorTimeSampler, vec2(sub_x, sub_y), 0.0);
+                    uvec4 srgb = decodeColor(colorTime.x);
+                    uint sem_o = srgb.x;
 
-                    if(abs(vertConf.z * lambda - vPosLocal.z * lambda) < 0.5)  // eyesight ray depth test // todo threshold
+                    if(sem_n == sem_o && abs(vertConf.z * lambda - vPosLocal.z * lambda) < 0.2)  // eyesight ray depth test // todo threshold
                     {
                         float dist = length(cross(ray, vertConf.xyz)) / length(ray);  // eyesight ray distance test
 
@@ -146,8 +157,7 @@ void main()
                             posLocal_o = vertConf.xyz;
                             c_o = vertConf.w;
                             normRadLocal_o = normRad;
-                            vec4 colorTime = textureLod(colorTimeSampler, vec2(sub_x, sub_y), 0.0);
-                            color_o = decodeColor(colorTime.x);
+                            color_o = vec3(srgb.yzw) / 255.f;
                             initTime_o = colorTime.z;
                         }
                     }
@@ -165,8 +175,9 @@ void main()
                 vPosition.w = c_n + c_o;
 
                 vec3 avgColor = ((c_n * color_n) + (c_o * color_n)) / (c_n + c_o);
-                vColor.x = encodeColor(avgColor);
-                vColor.y = float(bestID);              // marks as the ID of model surfel to be updated
+
+                vColor.x = encodeColor(avgColor, sem_n);
+                vColor.y = intBitsToFloat(bestID);              // marks as the ID of model surfel to be updated
                 vColor.z = initTime_o;
                 vColor.w = time;
 
@@ -179,8 +190,8 @@ void main()
                 vPosition = pose * vec4(posLocal_o, 1.0);
                 vPosition.w = c_n + c_o;
 
-                vColor.x = encodeColor(color_o);
-                vColor.y = float(bestID);              // marks as the ID of model surfel to be updated
+                vColor.x = encodeColor(color_o, sem_n);
+                vColor.y = intBitsToFloat(bestID);              // marks as the ID of model surfel to be updated
                 vColor.z = initTime_o;
                 vColor.w = time;
 
@@ -200,7 +211,7 @@ void main()
             vNormRad.xyz = normalize(vNormRad.xyz);
 
             // color
-            vColor.x = encodeColor(color_n);
+            vColor.x = encodeColor(color_n, sem_n);
             vColor.y = -1.f;                           // marks as new unstable
             vColor.z = time;
             vColor.w = time;

@@ -18,7 +18,7 @@ void main()
 {
     draw = 1;
 
-    int mark = int(round(vColorTime.y));
+    int mark = floatBitsToInt(vColorTime.y);
 
     // Filter the fused surfel
     if(mark >= 0)
