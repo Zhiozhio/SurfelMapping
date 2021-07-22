@@ -38,7 +38,7 @@ class FeedbackBuffer
                      const int & time,
                      const float depthCutoff);
 
-        void render(pangolin::OpenGlMatrix mvp, const Eigen::Matrix4f & pose, const bool drawNormals, const bool drawColors, const bool drawSurfel);
+        void render(pangolin::OpenGlMatrix mvp, const Eigen::Matrix4f & pose, bool drawNormals, bool drawColors, bool drawSemantic, bool drawSurfel);
 
         static const std::string RAW, FILTERED;
 

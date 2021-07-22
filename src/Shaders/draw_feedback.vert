@@ -1,20 +1,3 @@
-/*
- * This file is part of ElasticFusion.
- *
- * Copyright (C) 2015 Imperial College London
- * 
- * The use of the code within this file and all code within files that 
- * make up the software that is ElasticFusion is permitted for 
- * non-commercial purposes only.  The full terms and conditions that 
- * apply to the code within this file are detailed within the LICENSE.txt 
- * file and at <http://www.imperial.ac.uk/dyson-robotics-lab/downloads/elastic-fusion/elastic-fusion-license/> 
- * unless explicitly stated.  By downloading this file you agree to 
- * comply with these terms.
- *
- * If you wish to use any of this code for commercial purposes then 
- * please email researchcontracts.engineering@imperial.ac.uk.
- *
- */
 
 #version 330 core
 
@@ -26,6 +9,25 @@ uniform mat4 MVP;
 uniform mat4 pose;
 uniform float threshold;
 uniform int colorType;
+uniform vec3 class0;
+uniform vec3 class1;
+uniform vec3 class2;
+uniform vec3 class3;
+uniform vec3 class4;
+uniform vec3 class5;
+uniform vec3 class6;
+uniform vec3 class7;
+uniform vec3 class8;
+uniform vec3 class9;
+uniform vec3 class10;
+uniform vec3 class11;
+uniform vec3 class12;
+uniform vec3 class13;
+uniform vec3 class14;
+uniform vec3 class15;
+uniform vec3 class16;
+uniform vec3 class17;
+uniform vec3 class18;
 
 out vec4 vColor;
 
@@ -44,6 +46,32 @@ void main()
             uvec4 srgb = decodeColor(color.x);
             vec3 rgb = vec3(srgb.yzw) / 255.f;
             vColor = vec4(rgb, 1.0);
+        }
+        else if(colorType == 3)
+        {
+            uvec4 srgb = decodeColor(color.x);
+            uint c = srgb.r;
+
+            if(c == 0U) vColor = vec4((class0 / 255), 1.0);
+            else if(c == 1U) vColor = vec4((class1 / 255), 1.0);
+            else if(c == 2U) vColor = vec4((class2 / 255), 1.0);
+            else if(c == 3U) vColor = vec4((class3 / 255), 1.0);
+            else if(c == 4U) vColor = vec4((class4 / 255), 1.0);
+            else if(c == 5U) vColor = vec4((class5 / 255), 1.0);
+            else if(c == 6U) vColor = vec4((class6 / 255), 1.0);
+            else if(c == 7U) vColor = vec4((class7 / 255), 1.0);
+            else if(c == 8U) vColor = vec4((class8 / 255), 1.0);
+            else if(c == 9U) vColor = vec4((class9 / 255), 1.0);
+            else if(c == 10U) vColor = vec4((class10 / 255), 1.0);
+            else if(c == 11U) vColor = vec4((class11 / 255), 1.0);
+            else if(c == 12U) vColor = vec4((class12 / 255), 1.0);
+            else if(c == 13U) vColor = vec4((class13 / 255), 1.0);
+            else if(c == 14U) vColor = vec4((class14 / 255), 1.0);
+            else if(c == 15U) vColor = vec4((class15 / 255), 1.0);
+            else if(c == 16U) vColor = vec4((class16 / 255), 1.0);
+            else if(c == 17U) vColor = vec4((class17 / 255), 1.0);
+            else if(c == 18U) vColor = vec4((class18 / 255), 1.0);
+            else vColor = vec4(0.0);
         }
         else  // draw mono (a little normal)
         {

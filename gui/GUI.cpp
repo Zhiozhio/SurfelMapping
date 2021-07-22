@@ -100,7 +100,7 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         //    depthCutoff = new pangolin::Var<float>("ui.Depth cutoff", 3.0, 0.0, 12.0);
         //
         followPose = new pangolin::Var<bool>("ui.Follow pose", true, true);
-        drawRawCloud = new pangolin::Var<int>("ui.Draw raw", 0, 0, 4);
+        drawRawCloud = new pangolin::Var<int>("ui.Draw raw", 0, 0, 5);
         //drawFilteredCloud = new pangolin::Var<int>("ui.Draw filtered", 0, 0, 4);
         drawGlobalModel = new pangolin::Var<int>("ui.Draw global model", 2, 0, 5);
         //    drawColors = new pangolin::Var<bool>("ui.Draw colors", showcaseMode, true);

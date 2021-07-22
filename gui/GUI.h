@@ -95,10 +95,10 @@ public:
                         * drawFxaa;
 
     pangolin::Var<int> * gpuMem,
-                       // define draw mode: 0 - none, 1 - mono, 2 - normal, 3 - color, 4 - surfel
+                       // define draw mode: 0 - none, 1 - mono, 2 - normal, 3 - color, 4 - semantic, 5 - surfel
                        * drawRawCloud,
                        * drawFilteredCloud,
-                       // define draw mode: 0 - none, 1 - point, 2 - mono, 3 - normal, 4 - color, 5 - time
+                       // define draw mode: 0 - none, 1 - point, 2 - mono, 3 - normal, 4 - color, 5 - semantic
                        * drawGlobalModel;
 
     pangolin::Var<std::string> * totalPoints,

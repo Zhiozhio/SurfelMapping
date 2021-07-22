@@ -649,7 +649,7 @@ void GlobalModel::renderModel(pangolin::OpenGlMatrix mvp,
                               const bool drawColors,
                               const bool drawPoints,
                               const bool drawWindow,
-                              const bool drawTimes,
+                              const bool drawSemantic,
                               const int time,
                               const int timeDelta)
 {
@@ -661,7 +661,7 @@ void GlobalModel::renderModel(pangolin::OpenGlMatrix mvp,
 
     program->setUniform(Uniform("threshold", threshold));
 
-    program->setUniform(Uniform("colorType", (drawNormals ? 1 : drawColors ? 2 : drawTimes ? 3 : 0)));
+    program->setUniform(Uniform("colorType", (drawNormals ? 1 : drawColors ? 2 : drawSemantic ? 3 : 0)));
 
     program->setUniform(Uniform("unstable", drawUnstable));
 
@@ -673,6 +673,26 @@ void GlobalModel::renderModel(pangolin::OpenGlMatrix mvp,
 
     Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
     program->setUniform(Uniform("pose", pose));
+
+    program->setUniform(Uniform("class0", Eigen::Vector3f(128,128,128)));
+    program->setUniform(Uniform("class1", Eigen::Vector3f(0,255,0)));
+    program->setUniform(Uniform("class2", Eigen::Vector3f(0,0,255)));
+    program->setUniform(Uniform("class3", Eigen::Vector3f(255,255,0)));
+    program->setUniform(Uniform("class4", Eigen::Vector3f(128,0,0)));
+    program->setUniform(Uniform("class5", Eigen::Vector3f(255,0,255)));
+    program->setUniform(Uniform("class6", Eigen::Vector3f(128,128,0)));
+    program->setUniform(Uniform("class7", Eigen::Vector3f(0,128,0)));
+    program->setUniform(Uniform("class8", Eigen::Vector3f(128,0,128)));
+    program->setUniform(Uniform("class9", Eigen::Vector3f(0,128,128)));
+    program->setUniform(Uniform("class10", Eigen::Vector3f(0,255,255)));
+    program->setUniform(Uniform("class11", Eigen::Vector3f(0,0,128)));
+    program->setUniform(Uniform("class12", Eigen::Vector3f(245,222,179)));
+    program->setUniform(Uniform("class13", Eigen::Vector3f(255,0,0)));
+    program->setUniform(Uniform("class14", Eigen::Vector3f(210,105,30)));
+    program->setUniform(Uniform("class15", Eigen::Vector3f(244,164,96)));
+    program->setUniform(Uniform("class16", Eigen::Vector3f(119,136,153)));
+    program->setUniform(Uniform("class17", Eigen::Vector3f(255,20,147)));
+    program->setUniform(Uniform("class18", Eigen::Vector3f(138,43,226)));
 
     glBindBuffer(GL_ARRAY_BUFFER, modelVbo);
 

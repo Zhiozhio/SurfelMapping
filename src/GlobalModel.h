@@ -32,7 +32,7 @@ public:
                      const bool drawColors,
                      const bool drawPoints,
                      const bool drawWindow,
-                     const bool drawTimes,
+                     const bool drawSemantic,
                      const int time,
                      const int timeDelta);
 

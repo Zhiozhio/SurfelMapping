@@ -22,6 +22,25 @@ layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
 
 uniform float threshold;
+uniform vec3 class0;
+uniform vec3 class1;
+uniform vec3 class2;
+uniform vec3 class3;
+uniform vec3 class4;
+uniform vec3 class5;
+uniform vec3 class6;
+uniform vec3 class7;
+uniform vec3 class8;
+uniform vec3 class9;
+uniform vec3 class10;
+uniform vec3 class11;
+uniform vec3 class12;
+uniform vec3 class13;
+uniform vec3 class14;
+uniform vec3 class15;
+uniform vec3 class16;
+uniform vec3 class17;
+uniform vec3 class18;
 
 in vec4 vColor[];
 in vec4 vPosition[];
@@ -43,28 +62,40 @@ void main()
 {
     if(colorType0[0] != -1)
     {
-        if(colorType0[0] == 1)
+        if(colorType0[0] == 1)  // draw norm
         {
             vColor0 = vNormRad[0].xyz;
         }
-        else if(colorType0[0] == 2)
+        else if(colorType0[0] == 2)  // draw color
         {
             uvec4 srgb = decodeColor(vColor[0].x);
             vColor0 = vec3(srgb.yzw) / 255.f;
         }
         else if(colorType0[0] == 3)
         {
-            vColor0 = vec3(vColor[0].z / float(vTime[0]));
-            
-            float minimum = 1.0f;
-            float maximum = float(vTime[0]);
-            
-            float ratio = 2 * (vColor[0].z - minimum) / (maximum - minimum);
-            vColor0.x = max(0, (1 - ratio));
-            vColor0.y = max(0, (ratio - 1));
-            vColor0.z = 1.0f - vColor0.x - vColor0.y;
-            
-            vColor0.xyz *= abs(dot(vNormRad[0].xyz, vec3(1.0, 1.0, 1.0))) + vec3(0.1f, 0.1f, 0.1f);
+            uvec4 srgb = decodeColor(vColor[0].x);
+            uint c = srgb.r;
+
+            if(c == 0U) vColor0 = vec3((class0 / 255));
+            else if(c == 1U) vColor0 = vec3(class1 / 255);
+            else if(c == 2U) vColor0 = vec3(class2 / 255);
+            else if(c == 3U) vColor0 = vec3(class3 / 255);
+            else if(c == 4U) vColor0 = vec3(class4 / 255);
+            else if(c == 5U) vColor0 = vec3(class5 / 255);
+            else if(c == 6U) vColor0 = vec3(class6 / 255);
+            else if(c == 7U) vColor0 = vec3(class7 / 255);
+            else if(c == 8U) vColor0 = vec3(class8 / 255);
+            else if(c == 9U) vColor0 = vec3(class9 / 255);
+            else if(c == 10U) vColor0 = vec3(class10 / 255);
+            else if(c == 11U) vColor0 = vec3(class11 / 255);
+            else if(c == 12U) vColor0 = vec3(class12 / 255);
+            else if(c == 13U) vColor0 = vec3(class13 / 255);
+            else if(c == 14U) vColor0 = vec3(class14 / 255);
+            else if(c == 15U) vColor0 = vec3(class15 / 255);
+            else if(c == 16U) vColor0 = vec3(class16 / 255);
+            else if(c == 17U) vColor0 = vec3(class17 / 255);
+            else if(c == 18U) vColor0 = vec3(class18 / 255);
+            else vColor0 = vec3(0.0);
         }
         else
         {

@@ -192,7 +192,8 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                                     pose,
                                                                     cloud_mode == 2,
                                                                     cloud_mode == 3,
-                                                                    cloud_mode == 4);
+                                                                    cloud_mode == 4,
+                                                                    cloud_mode == 5);
 
             //============ draw global model
             int surfel_mode = gui.drawGlobalModel->Get();
