@@ -35,7 +35,7 @@ public:
 
     virtual ~GPUTexture();
 
-    static const std::string RGB, DEPTH_RAW, DEPTH_FILTERED, DEPTH_METRIC;
+    static const std::string RGB, DEPTH_RAW, DEPTH_FILTERED, DEPTH_METRIC, SEMANTIC;
 
     pangolin::GlTexture * texture;
 

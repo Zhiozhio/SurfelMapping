@@ -26,20 +26,19 @@
 class ComputePack
 {
     public:
-        ComputePack(std::shared_ptr<Shader> program,
-                    pangolin::GlTexture * target);
+        ComputePack(std::shared_ptr<Shader> program);
 
         virtual ~ComputePack();
 
-        static const std::string FILTER, METRIC, METRIC_FILTERED;
+        // type of compute packs
+        static const std::string FILTER, METRIC;
 
-        void compute(pangolin::GlTexture * input, const std::vector<Uniform> * const uniforms = 0);
+        void compute(pangolin::GlTexture * target, pangolin::GlTexture * input, const std::vector<Uniform> * uniforms = 0);
+
+        void compute(pangolin::GlTexture * target, const std::vector<pangolin::GlTexture *> & inputs, const std::vector<Uniform> * uniforms = 0);
 
     private:
         std::shared_ptr<Shader> program;
-        pangolin::GlRenderBuffer renderBuffer;
-        pangolin::GlTexture * target;
-        pangolin::GlFramebuffer frameBuffer;
 };
 
 #endif /* COMPUTEPACK_H_ */

@@ -286,10 +286,10 @@ int main(int argc, char ** argv)
         core.processFrame(reader.rgb, reader.depth, reader.semantic, &reader.gtPose);
 
 
-
+/*
         core.checker->genRandomIds(20, 0, core.checker->texNum["sem"]);
         core.checker->showTextureuRandom("sem", 1);
-
+*/  // debug Semantic
 
 /*
         cout << reader.currentFrameId << '\n';

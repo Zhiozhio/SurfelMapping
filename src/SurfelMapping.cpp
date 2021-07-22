@@ -77,22 +77,20 @@ void SurfelMapping::createCompute()
 {
     computePacks[ComputePack::FILTER] = new ComputePack(loadProgramFromFile("empty.vert",
                                                                                   "quad.geom",
-                                                                                  "depth_filter.frag"),
-                                                        textures[GPUTexture::DEPTH_FILTERED]->texture);
+                                                                                  "depth_filter.frag"));
 
     computePacks[ComputePack::METRIC] = new ComputePack(loadProgramFromFile("empty.vert",
                                                                                   "quad.geom",
-                                                                                  "depth_metric.frag"),
-                                                        textures[GPUTexture::DEPTH_METRIC]->texture);
+                                                                                  "depth_metric.frag"));
 
-    //computePacks[ComputePack::METRIC_FILTERED] = new ComputePack(loadProgramFromFile("empty.vert", "quad.geom", "depth_metric.frag"),
-    //                                                             textures[GPUTexture::DEPTH_METRIC_FILTERED]->texture);
+
 }
 
 void SurfelMapping::createFeedbackBuffers()
 {
-    feedbackBuffers[FeedbackBuffer::RAW] = new FeedbackBuffer(loadProgramGeomFromFile("surfel_feedback.vert", "surfel_feedback.geom"));
-    //feedbackBuffers[FeedbackBuffer::FILTERED] = new FeedbackBuffer(loadProgramGeomFromFile("surfel_feedback.vert", "surfel_feedback.geom"));
+    feedbackBuffers[FeedbackBuffer::RAW] = new FeedbackBuffer(loadProgramGeomFromFile("surfel_feedback.vert",
+                                                                                            "surfel_feedback.geom"));
+
 }
 
 void SurfelMapping::processFrame(const unsigned char *rgb,
@@ -110,7 +108,7 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
     if(semantic)
         textures["SEMANTIC"]->texture->Upload(semantic, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
 
-    checker->retrieveTexture1u("sem", textures["SEMANTIC"]->texture);
+//    checker->retrieveTexture1u("sem", textures["SEMANTIC"]->texture);
 
     TICK("Preprocess");
 
@@ -243,29 +241,38 @@ void SurfelMapping::metriciseDepth()
     uniforms.emplace_back("minD", nearClipDepth);
     uniforms.emplace_back("maxD", farClipDepth);
 
-    computePacks[ComputePack::METRIC]->compute(textures[GPUTexture::DEPTH_RAW]->texture, &uniforms);
+    computePacks[ComputePack::METRIC]->compute(textures[GPUTexture::DEPTH_METRIC]->texture,
+                                               textures[GPUTexture::DEPTH_RAW]->texture,
+                                               &uniforms);
 }
 
 void SurfelMapping::filterDepth()
 {
+    // filter unwanted classes and bad edges
     std::vector<Uniform> uniforms;
+    std::vector<pangolin::GlTexture *> inputs;
+
+    inputs.push_back(textures[GPUTexture::DEPTH_METRIC]->texture);
+    inputs.push_back(textures[GPUTexture::SEMANTIC]->texture);
+
+    uniforms.emplace_back("dSampler", 0);
+    uniforms.emplace_back("sSampler", 1);
+    uniforms.emplace_back("cols", (float)Config::W() );
+    uniforms.emplace_back("rows", (float)Config::H() );
+    uniforms.emplace_back("minD", nearClipDepth);
+    uniforms.emplace_back("maxD", 100.f );
+    uniforms.emplace_back("diffThresh", 0.15f);
+
+    computePacks[ComputePack::FILTER]->compute(textures[GPUTexture::DEPTH_FILTERED]->texture,
+                                               inputs,
+                                               &uniforms);
+
 
     // set bilateral covariance
     float sigma_pixel = 4.5;
     float sigma_intensity = 30.;
     float sigma_pixel2_inv_half = 0.5f / (sigma_pixel * sigma_pixel);                 // 1 / 2*sigma^2
     float sigma_intensity2_inv_half = 0.5f / (sigma_intensity * sigma_intensity);
-
-    uniforms.emplace_back("cols", (float)Config::W() );
-    uniforms.emplace_back("rows", (float)Config::H() );
-    uniforms.emplace_back("minD", nearClipDepth);
-    uniforms.emplace_back("maxD", 100.f );
-    uniforms.emplace_back("diffThresh", 0.15f);
-    uniforms.emplace_back("sigPix", sigma_pixel2_inv_half);
-    uniforms.emplace_back("sigIntensity", sigma_intensity2_inv_half);
-
-    computePacks[ComputePack::FILTER]->compute(textures[GPUTexture::DEPTH_METRIC]->texture, &uniforms);
-
 
 }
 

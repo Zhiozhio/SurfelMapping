@@ -5,7 +5,8 @@ in vec2 texcoord;
 
 out float FragColor;
 
-uniform sampler2D gSampler;
+uniform sampler2D dSampler;
+uniform usampler2D sSampler;
 uniform float cols;
 uniform float rows;
 uniform float minD;
@@ -14,10 +15,13 @@ uniform float diffThresh;
 
 void main()
 {
-	vec4 texel = texture(gSampler, texcoord.xy);
+	vec4 texel = texture(dSampler, texcoord.xy);
 	float depth = texel.r;
+
+	uvec4 utexel = texture(sSampler, texcoord.xy);
+	uint c = utexel.r;  // class
     
-    if( depth <= minD || depth >= maxD )
+    if( depth <= minD || depth >= maxD || c == 10U )  // 10 is sky
     {
         FragColor = 0;
     }
@@ -45,10 +49,13 @@ void main()
 				if(texX < 0.0 || texX > 1.0 || texY < 0.0 || texY > 1.0)
 					continue;
 	            
-	            texel = texture(gSampler, vec2(texX, texY));
+	            texel = texture(dSampler, vec2(texX, texY));
 				float depth_k = texel.r;
+
+				utexel = texture(sSampler, vec2(texX, texY));
+				uint c_k = utexel.r;
 	            
-	            if(abs(depth_k - depth) < diffThresh)
+	            if(abs(depth_k - depth) < diffThresh && c == c_k)
 				{
 					supportNum++;
 				}

@@ -22,6 +22,7 @@ const std::string GPUTexture::RGB = "RGB";
 const std::string GPUTexture::DEPTH_RAW = "DEPTH";
 const std::string GPUTexture::DEPTH_FILTERED = "DEPTH_FILTERED";
 const std::string GPUTexture::DEPTH_METRIC = "DEPTH_METRIC";
+const std::string GPUTexture::SEMANTIC = "SEMANTIC";
 
 GPUTexture::GPUTexture(const int width,
                        const int height,
