@@ -286,6 +286,8 @@ int main(int argc, char ** argv)
         //============ Process Current Frame ============//
         core.processFrame(reader.rgb, reader.depth, reader.semantic, &reader.gtPose);
 
+        cout << reader.currentFrameId << '\n';
+
 
 /*
         core.checker->genRandomIds(20, 0, core.checker->texNum["sem"]);
@@ -293,7 +295,6 @@ int main(int argc, char ** argv)
 */  // debug Semantic
 
 /*
-        cout << reader.currentFrameId << '\n';
         cout << "dataProgram get vertices (fuse | new): " << core.getGlobalModel().getData().second << '\n';
         cout << "conflict vertices: " << core.getGlobalModel().getConflict().second << '\n';
         cout << "the offset (old remainder): " << core.getGlobalModel().getOffset() << " "
