@@ -26,6 +26,7 @@ public:
     //        static const int MAX_NODES;
 
     void renderModel(pangolin::OpenGlMatrix mvp,
+                     pangolin::OpenGlMatrix mv,
                      const float threshold,
                      const bool drawUnstable,
                      const bool drawNormals,

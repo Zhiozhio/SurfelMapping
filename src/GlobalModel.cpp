@@ -23,7 +23,7 @@ GlobalModel::GlobalModel()
    backMappingProgram(loadProgramGeomFromFile("back_map.vert", "back_map.geom")),
    unstableProgram(loadProgramGeomFromFile("unstable.vert", "unstable.geom")),
    drawPointProgram(loadProgramFromFile("draw_feedback.vert", "draw_feedback.frag")),
-   drawSurfelProgram(loadProgramFromFile("draw_global_surface.vert", "draw_global_surface.geom", "draw_global_surface.frag")),
+   drawSurfelProgram(loadProgramFromFile("draw_surface.vert", "draw_surface_adaptive.geom", "draw_surface.frag")),
    renderBuffer(TEXTURE_DIMENSION, TEXTURE_DIMENSION),
    vertConfRenderBuffer(TEXTURE_DIMENSION, TEXTURE_DIMENSION),
    modelMapVertsConfs(TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA32F, GL_RED, GL_FLOAT),
@@ -643,6 +643,7 @@ void GlobalModel::buildModelMap()
 }
 
 void GlobalModel::renderModel(pangolin::OpenGlMatrix mvp,
+                              pangolin::OpenGlMatrix mv,
                               const float threshold,
                               const bool drawUnstable,
                               const bool drawNormals,
@@ -658,6 +659,8 @@ void GlobalModel::renderModel(pangolin::OpenGlMatrix mvp,
     program->Bind();
 
     program->setUniform(Uniform("MVP", mvp));
+
+    program->setUniform(Uniform("MV", mv.Inverse()));
 
     program->setUniform(Uniform("threshold", threshold));
 

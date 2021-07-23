@@ -24,7 +24,7 @@ const std::string FeedbackBuffer::FILTERED = "FILTERED";
 FeedbackBuffer::FeedbackBuffer(std::shared_ptr<Shader> program)
  : program(program),
    drawPointProgram(loadProgramFromFile("draw_feedback.vert", "draw_feedback.frag")),
-   drawSurfelProgram(loadProgramFromFile("draw_global_surface.vert", "draw_global_surface.geom", "draw_global_surface.frag")),
+   drawSurfelProgram(loadProgramFromFile("draw_surface.vert", "draw_surface.geom", "draw_surface.frag")),
    bufferSize(Config::numPixels() * Config::vertexSize()),
    count(0)
 {

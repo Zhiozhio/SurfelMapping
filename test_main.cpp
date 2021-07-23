@@ -200,6 +200,7 @@ void rungui(SurfelMapping & core, GUI & gui)
 
             if(surfel_mode)
                 core.getGlobalModel().renderModel(gui.s_cam.GetProjectionModelViewMatrix(),
+                                                  gui.s_cam.GetModelViewMatrix(),
                                                   0.0,
                                                   true,
                                                   surfel_mode == 3,
@@ -209,6 +210,8 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                   surfel_mode == 5,
                                                   3,
                                                   3);
+
+//            cout << gui.s_cam.GetModelViewMatrix() << endl;
 
             gui.drawCapacity(core.getGlobalModel().getModelMapNR());
 

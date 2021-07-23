@@ -42,7 +42,7 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
 //    modelFrameBuffer->AttachColour(*modelTexture);
 //    modelFrameBuffer->AttachDepth(*modelRenderBuffer);
 
-//    modelProgram = std::shared_ptr<Shader>(loadProgramFromFile("draw_global_surface.vert", "draw_global_surface_phong.frag", "draw_global_surface.geom"));
+//    modelProgram = std::shared_ptr<Shader>(loadProgramFromFile("draw_surface.vert", "draw_surface_phong.frag", "draw_surface.geom"));
 //    fxaaProgram = std::shared_ptr<Shader>(loadProgramFromFile("empty.vert", "fxaa.frag", "quad.geom"));
 
 
