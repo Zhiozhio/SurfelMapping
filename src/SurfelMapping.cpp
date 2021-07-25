@@ -130,7 +130,7 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
         // compute surfel in current frame
         computeFeedbackBuffers();
 
-        globalModel.initialize(*feedbackBuffers[FeedbackBuffer::RAW]);
+        globalModel.initialize(*feedbackBuffers[FeedbackBuffer::RAW], currPose);
 
         globalModel.buildModelMap();  // build model map each time modelVbo is updated
 

@@ -26,10 +26,17 @@ out vec4 vPosition0;
 out vec4 vColor0;
 out vec4 vNormRad0;
 
+uniform mat4 pose;
+
 void main()
 {
-    vPosition0 = vPosition;
+    vec4 posGlobal = pose * vec4(vPosition.xyz, 1.0);
+    posGlobal.w = vPosition.w;
+
+    vPosition0 = posGlobal;
+
     vColor0 = vColor;
     vColor0.y = 0; //Unused
-    vNormRad0 = vNormRad;
+
+    vNormRad0 = vec4(normalize(mat3(pose) * vNormRad.xyz), vNormRad.w);
 }

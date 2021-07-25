@@ -166,10 +166,12 @@ GlobalModel::~GlobalModel()
     glDeleteBuffers(1, &uvo);
 }
 
-void GlobalModel::initialize(const FeedbackBuffer & rawFeedback)
+void GlobalModel::initialize(const FeedbackBuffer & rawFeedback, const Eigen::Matrix4f &pose)
 {
     // just simply copy
     initProgram->Bind();
+
+    initProgram->setUniform(Uniform("pose", pose));
 
     glBindBuffer(GL_ARRAY_BUFFER, rawFeedback.vbo);
 

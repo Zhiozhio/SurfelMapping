@@ -18,7 +18,7 @@ public:
     GlobalModel();
     virtual ~GlobalModel();
 
-    void initialize(const FeedbackBuffer & rawFeedback);
+    void initialize(const FeedbackBuffer & rawFeedback, const Eigen::Matrix4f &pose);
 
     static const int TEXTURE_DIMENSION;
     static const int MAX_VERTICES;
