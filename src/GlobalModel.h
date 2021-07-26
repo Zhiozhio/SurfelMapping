@@ -66,6 +66,8 @@ public:
                          GPUTexture * depthRaw,
                          GPUTexture * semantic);
 
+    void updateConflict();
+
 
     pangolin::GlTexture * getModelMapVC();
     pangolin::GlTexture * getModelMapCT();

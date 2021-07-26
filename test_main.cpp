@@ -299,6 +299,21 @@ int main(int argc, char ** argv)
             core.checker->showIds();
             vector<int> layout{1, 4};
             core.checker->showVertexfRandom("Conf", 5, layout);
+
+            vector<int> vertex_ids;
+            float * vert = core.checker->vertexfs["Conf"];
+            for(auto id : core.checker->ids)
+            {
+                unsigned int base = id * 5;
+                int * the_value = reinterpret_cast<int *>(vert + base);
+                vertex_ids.push_back(*the_value);
+                //cout << *the_value << " | ";
+            }
+
+            core.checker->showTexturebyID("VertConf", vertex_ids);
+
+
+
         }
 
 

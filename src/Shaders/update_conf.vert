@@ -10,7 +10,7 @@ uniform int texDim;
 
 void main()
 {
-    int vert_id = int(round(confID));
+    int vert_id = floatBitsToInt(confID);
     // get position by index
     int intY = vert_id / texDim;
     int intX = vert_id - (intY * texDim);

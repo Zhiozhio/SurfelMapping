@@ -162,7 +162,11 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 
         checker->retrieveVertexf("Conf", globalModel.getConflict().first, globalModel.getConflict().second);
 
+        globalModel.updateConflict();
 
+        checker->retrieveTexture4f("VertConf", globalModel.getModelMapVC(), globalModel.getModel().second);
+
+        
 
 
         TOCK("Conflict");

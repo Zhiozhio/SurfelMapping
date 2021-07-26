@@ -522,7 +522,7 @@ void Checker::print_layout(unsigned int a, unsigned int b, unsigned int c, unsig
 
 void Checker::print_layout(int a)
 {
-    printf("| %53d |", a);
+    printf("| %51d |", a);
 }
 
 void Checker::print_layout(int a, int b)

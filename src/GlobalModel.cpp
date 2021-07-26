@@ -483,7 +483,6 @@ void GlobalModel::update()
 
 void GlobalModel::processConflict(const Eigen::Matrix4f &pose, const int &time, GPUTexture *depthRaw, GPUTexture * semantic)
 {
-    // The first part retrieve the model vertices conflict with current measurement
     conflictProgram->Bind();
 
     conflictProgram->setUniform(Uniform("drSampler", 0));
@@ -550,9 +549,10 @@ void GlobalModel::processConflict(const Eigen::Matrix4f &pose, const int &time, 
 
     CheckGlDieOnError();
 
-    //------------------------------------------------------------------//
+}
 
-    // The 2nd part change model map - II
+void GlobalModel::updateConflict()
+{
     vertConfFrameBuffer.Bind();
 
     glPushAttrib(GL_VIEWPORT_BIT);
@@ -586,8 +586,6 @@ void GlobalModel::processConflict(const Eigen::Matrix4f &pose, const int &time, 
     vertConfFrameBuffer.Unbind();
 
     glFinish();
-
-
 
     CheckGlDieOnError()
 }
