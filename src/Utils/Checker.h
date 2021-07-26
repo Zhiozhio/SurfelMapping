@@ -80,6 +80,10 @@ private:
     void print_layout(unsigned int a, unsigned int b);
     void print_layout(unsigned int a, unsigned int b, unsigned int c, unsigned int d);
 
+    void print_layout(int a);
+    void print_layout(int a, int b);
+    void print_layout(int a, int b, int c, int d);
+
 
 };
 

@@ -179,17 +179,17 @@ void Checker::retrieveVertexf(std::string name, GLuint vbo, int num)
     {
         // update
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo);
-        glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, num * Config::vertexSize(), iter->second);
+        glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, num * 5 * sizeof(float), iter->second);
 
         vertexNums[name] = num;
     }
     else
     {
         // new
-        float * vertex = new float[Config::numPixels() * 4 * 12];
+        float * vertex = new float[Config::numPixels() * 12];
 
         glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo);
-        glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, num * Config::vertexSize(), vertex);
+        glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, num * 5 * sizeof(float), vertex);
 
         vertexfs[name] = vertex;
         vertexNums[name] = num;
@@ -284,8 +284,11 @@ void Checker::showVertexfRandom(std::string name, int stride, std::vector<int> &
             switch(num)
             {
                 case 1:
-                    print_layout(vert[base]);
+                {
+                    int * the_value = reinterpret_cast<int *>(vert + base);
+                    print_layout(*the_value);
                     break;
+                }
                 case 2:
                     print_layout(vert[base], vert[base + 1]);
                     break;
@@ -515,4 +518,19 @@ void Checker::print_layout(unsigned int a, unsigned int b)
 void Checker::print_layout(unsigned int a, unsigned int b, unsigned int c, unsigned int d)
 {
     printf("| %14u %14u %14u %14u |", a, b, c, d);
+}
+
+void Checker::print_layout(int a)
+{
+    printf("| %53d |", a);
+}
+
+void Checker::print_layout(int a, int b)
+{
+    printf("| %27d %27d |", a, b);
+}
+
+void Checker::print_layout(int a, int b, int c, int d)
+{
+    printf("| %14d %14d %14d %14d |", a, b, c, d);
 }

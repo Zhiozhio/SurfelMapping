@@ -150,13 +150,22 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 
         currPose = *gtPose;
 
-        //TICK("autoFill");
-        //resize.image(indexMap.imageTex(), imageBuff);
-        //bool shouldFillIn = !denseEnough(imageBuff);
-        //TOCK("autoFill");
+        std::cout << "Last Model Num: " << globalModel.getModel().second << '\n';
 
-        //Eigen::Vector3f trans = currPose.topRightCorner(3, 1);
-        //Eigen::Matrix<float, 3, 3, Eigen::RowMajor> rot = currPose.topLeftCorner(3, 3);
+        TICK("Conflict");
+        globalModel.processConflict(currPose,
+                                    tick,
+                                    textures[GPUTexture::DEPTH_FILTERED],
+                                    textures[GPUTexture::SEMANTIC]);
+
+        std::cout << "Conflict Num: " << globalModel.getConflict().second << '\n';
+
+        checker->retrieveVertexf("Conf", globalModel.getConflict().first, globalModel.getConflict().second);
+
+
+
+
+        TOCK("Conflict");
 
         TICK("indexMap");
         indexMap.predictIndices(currPose, tick, globalModel.getModel(), farClipDepth, 200);

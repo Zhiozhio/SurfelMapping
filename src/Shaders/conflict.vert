@@ -1,87 +1,71 @@
 
 #version 330 core
 
-layout (location = 0) in vec2 texcoord;
+layout (location = 0) in vec4 vPosition;
+layout (location = 1) in vec4 vColorTime;
+layout (location = 2) in vec4 vNormRad;
 
 uniform sampler2D drSampler;
-uniform isampler2D indexSampler;
-uniform sampler2D vertConfSampler;
+uniform usampler2D seSampler;
 
-uniform vec4 cam; //cx, cy, 1/fx, 1/fy
+uniform vec4 cam; //cx, cy, fx, fy
 uniform float cols;
 uniform float rows;
-uniform int scale;
-uniform float minDepth;
-uniform float maxDepth;
-uniform mat4 pose;
+uniform mat4 t_inv;
 
-out int conf_num;
-out Conflict {
-    float conf_id[9];  // 3 x 3
-    vec4 posConf[9];
-} conf_out;
+out int conf_id;
+out vec4 conf_posConf;
+
 
 void main()
 {
-    conf_num = 0;
+    vec4 vPosHome = t_inv * vec4(vPosition.xyz, 1.0);
 
-    // Raw data pixel, should be guaranteed to be in bounds and centred on pixels
-    float x = texcoord.x * cols;
-    float y = texcoord.y * rows;
+    float xl = vPosHome.x / vPosHome.z;
+    float yl = vPosHome.y / vPosHome.z;
 
-    // unit plane coordinates
-    float xl = (x - cam.x) * cam.z;
-    float yl = (y - cam.y) * cam.w;
+    float u = cam.z * xl + cam.x;
+    float v = cam.w * yl + cam.y;
 
-    // unit plane vector
-    vec3 ray = vec3(xl, yl, 1);
-    float lambda = sqrt(xl * xl + yl * yl + 1);  // length of ray
-
-    // pixel and sub pixel size
-    float pix_size_x = 1.0f / cols;
-    float pix_size_y = 1.0f / rows;
-
-    float subpix_size_x = 1.0f / (cols * scale);
-    float subpix_size_y = 1.0f / (rows * scale);
-
-    // intensity of this pixel
-    float value = float(texture(drSampler, texcoord));
-    if(value <= minDepth || value >= maxDepth)
+    if(u < 0 || u > cols || v < 0 || v > rows || vPosHome.z < 0)
     {
-        value = maxDepth;
+        conf_id = -10;
+        conf_posConf = vec4(0);
     }
-
-
-    // iterate subpixels in this pixel
-    int iter_num = 0;
-
-    for(int i = 0; i < scale; ++i)
+    else
     {
-        for(int j = 0; j < scale; ++j)
+        // unit plane vector
+        vec3 ray = vec3(xl, yl, 1);
+        float lambda = sqrt(xl * xl + yl * yl + 1);  // length of ray
+
+        vec2 texcoord = vec2(u / cols, v / rows);
+
+        float depth = float(texture(drSampler, texcoord));
+        uint semantic = uint(texture(seSampler, texcoord));
+
+        if(semantic == 10U)  // 10U is sky
+            depth = 0.f;
+
+
+        float x = 0;
+        float y = 0;
+
+        if(depth * lambda - vPosHome.z * lambda >= 0.2 )  // closer than the mewest measurement
         {
-            // get texture coordinate
-            float sub_x = texcoord.x - subpix_size_x * (scale - 1) / 2 + subpix_size_x * i;
-            float sub_y = texcoord.y - subpix_size_y * (scale - 1) / 2 + subpix_size_y * j;
+            // x, y is NDC coordinate
+            x = (u - (cols * 0.5)) / (cols * 0.5);
+            y = (v - (rows * 0.5)) / (rows * 0.5);
 
-            int currentID = int(textureLod(indexSampler, vec2(sub_x, sub_y), 0.0));
-
-            if(currentID > 0) // if it has a projection here
-            {
-                // get old vertex
-                vec4 vertConf = textureLod(vertConfSampler, vec2(sub_x, sub_y), 0.0);
-
-                if(vertConf.z * lambda - value * lambda > 0.5)  // eyesight ray depth larger than measurement // todo threshold
-                {
-                    vertConf = pose * vec4(vertConf.xyz, 1.0);
-                    vertConf.w -= 10.0;  // todo adjust
-
-                    conf_out.posConf[iter_num] = vertConf;
-                    conf_out.conf_id[iter_num] = float(currentID);
-                    conf_num++;
-                }
-            }
-
-            ++iter_num;
+            conf_id = gl_VertexID;
+            conf_posConf = vPosition;
+            conf_posConf.w -= 1.f;
+        }
+        else
+        {
+            x = -10;
+            y = -10;
+            conf_id = -20;
+            conf_posConf = vec4(0);
         }
     }
 

@@ -42,11 +42,11 @@ GlobalModel::GlobalModel()
     glBufferData(GL_ARRAY_BUFFER, Config::numPixels() * Config::vertexSize(), nullptr, GL_DYNAMIC_COPY);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    int scale_square = IndexMap::FACTOR * IndexMap::FACTOR;
+    glGenTransformFeedbacks(1, &conflictFid);
     glGenBuffers(1, &conflictVbo);
     glBindBuffer(GL_ARRAY_BUFFER, conflictVbo);
     glBufferData(GL_ARRAY_BUFFER,
-                 Config::numPixels() * scale_square * (sizeof(float) + (int)(Config::vertexSize() / 3)), // id + posConf
+                 Config::numPixels() * (sizeof(float) + (int)(Config::vertexSize() / 3)), // id + posConf
                  nullptr,
                  GL_DYNAMIC_COPY);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -181,16 +181,15 @@ void GlobalModel::initialize(const FeedbackBuffer & rawFeedback, const Eigen::Ma
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, Config::vertexSize(), reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f)));
 
-    //glBindBuffer(GL_ARRAY_BUFFER, filteredFeedback.vbo);
-
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, Config::vertexSize(), reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f) * 2));
 
     glEnable(GL_RASTERIZER_DISCARD);
 
-//    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, modelFid);
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, modelFid);
 
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, modelVbo);
+    //glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, modelVbo);
+    glTransformFeedbackBufferBase(modelFid, 0, modelVbo);
 
     glBeginTransformFeedback(GL_POINTS);
 
@@ -211,7 +210,8 @@ void GlobalModel::initialize(const FeedbackBuffer & rawFeedback, const Eigen::Ma
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-//    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
     initProgram->Unbind();
 
@@ -479,6 +479,117 @@ void GlobalModel::update()
     TOCK("Update::Conflict");
 
     CheckGlDieOnError();
+}
+
+void GlobalModel::processConflict(const Eigen::Matrix4f &pose, const int &time, GPUTexture *depthRaw, GPUTexture * semantic)
+{
+    // The first part retrieve the model vertices conflict with current measurement
+    conflictProgram->Bind();
+
+    conflictProgram->setUniform(Uniform("drSampler", 0));
+    conflictProgram->setUniform(Uniform("seSampler", 1));
+
+    conflictProgram->setUniform(Uniform("cam", Eigen::Vector4f(Config::cx(),
+                                                               Config::cy(),
+                                                               Config::fx(),
+                                                               Config::fy())));
+    conflictProgram->setUniform(Uniform("cols", (float)Config::W()));
+    conflictProgram->setUniform(Uniform("rows", (float)Config::H()));
+
+    Eigen::Matrix4f t_inv = pose.inverse();  // T_w^c
+    conflictProgram->setUniform(Uniform("t_inv", t_inv));
+
+    glBindBuffer(GL_ARRAY_BUFFER, modelVbo);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, Config::vertexSize(), 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, Config::vertexSize(), reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f) * 1));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, Config::vertexSize(), reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f) * 2));
+
+    glEnable(GL_RASTERIZER_DISCARD);
+
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, conflictFid);
+
+    //glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, conflictVbo);
+    glTransformFeedbackBufferBase(conflictFid, 0, conflictVbo);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, depthRaw->texture->tid);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, semantic->texture->tid);
+
+    glBeginTransformFeedback(GL_POINTS);
+
+    glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, countQuery);
+    conflictCount = 0;
+
+    glDrawArrays(GL_POINTS, 0, count);
+
+    glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
+    glGetQueryObjectuiv(countQuery, GL_QUERY_RESULT, &conflictCount);
+
+    glEndTransformFeedback();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE0);
+
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+
+    glDisable(GL_RASTERIZER_DISCARD);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    conflictProgram->Unbind();
+
+    glFinish();
+
+    CheckGlDieOnError();
+
+    //------------------------------------------------------------------//
+
+    // The 2nd part change model map - II
+    vertConfFrameBuffer.Bind();
+
+    glPushAttrib(GL_VIEWPORT_BIT);
+
+    glViewport(0, 0, vertConfRenderBuffer.width, vertConfRenderBuffer.height);
+
+    glDisable(GL_DEPTH_TEST);
+
+    updateConflictProgram->Bind();
+    updateConflictProgram->setUniform(Uniform("texDim", TEXTURE_DIMENSION));
+
+    glBindBuffer(GL_ARRAY_BUFFER, conflictVbo);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float) + (int)(Config::vertexSize() / 3), 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(float) + (int)(Config::vertexSize() / 3), reinterpret_cast<GLvoid*>(sizeof(float)));
+
+    glDrawArrays(GL_POINTS, 0, conflictCount);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    updateConflictProgram->Unbind();
+
+    glEnable(GL_DEPTH_TEST);
+
+    glPopAttrib();
+
+    vertConfFrameBuffer.Unbind();
+
+    glFinish();
+
+
+
+    CheckGlDieOnError()
 }
 
 void GlobalModel::backMapping()

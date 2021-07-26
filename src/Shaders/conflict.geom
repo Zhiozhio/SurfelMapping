@@ -2,23 +2,22 @@
 #version 330 core
 
 layout(points) in;
-layout(points, max_vertices = 9) out;
+layout(points, max_vertices = 1) out;
 
-in int conf_num[];
-in Conflict {
-    float conf_id[9];
-    vec4 posConf[9];
-} conflict_in[];
+in int conf_id[];
+in vec4 conf_posConf[];
 
 out float conflictId0;
 out vec4 vPosition0;
 
 void main()
 {
-    for(int i = 0; i < conf_num[0]; ++i)
+    if(conf_id[0] > 0)
     {
-        conflictId0 = conflict_in[0].conf_id[i];
-        vPosition0 = conflict_in[0].posConf[i];
+        conflictId0 = intBitsToFloat(conf_id[0]);
+        //conflictId0 = float(conf_id[0]);
+        vPosition0 = conf_posConf[0];
+
         EmitVertex();
         EndPrimitive();
     }

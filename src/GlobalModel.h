@@ -27,15 +27,15 @@ public:
 
     void renderModel(pangolin::OpenGlMatrix mvp,
                      pangolin::OpenGlMatrix mv,
-                     const float threshold,
-                     const bool drawUnstable,
-                     const bool drawNormals,
-                     const bool drawColors,
-                     const bool drawPoints,
-                     const bool drawWindow,
-                     const bool drawSemantic,
-                     const int time,
-                     const int timeDelta);
+                     float threshold,
+                     bool drawUnstable,
+                     bool drawNormals,
+                     bool drawColors,
+                     bool drawPoints,
+                     bool drawWindow,
+                     bool drawSemantic,
+                     int time,
+                     int timeDelta);
 
     void dataAssociate(const Eigen::Matrix4f & pose,
                        const int & time,
@@ -46,8 +46,8 @@ public:
                        GPUTexture * vertConfMap,
                        GPUTexture * colorTimeMap,
                        GPUTexture * normRadMap,
-                       const float depthMin,
-                       const float depthMax);
+                       float depthMin,
+                       float depthMax);
 
     void update();
 
@@ -60,6 +60,11 @@ public:
      * modelMap* must be synchronized with model.
      */
     void buildModelMap();
+
+    void processConflict(const Eigen::Matrix4f & pose,
+                         const int & time,
+                         GPUTexture * depthRaw,
+                         GPUTexture * semantic);
 
 
     pangolin::GlTexture * getModelMapVC();
@@ -82,7 +87,8 @@ private:
     GLuint modelVbo, modelFid;;                    // whole surfel buffer & its feedback ID
     // standby bits holds the ID
     GLuint dataVbo, dataFid;                       // including updated surfel and new unstable surfel
-    GLuint conflictVbo;
+
+    GLuint conflictVbo, conflictFid;
 
     GLuint unstableVbo;
 

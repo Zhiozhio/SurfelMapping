@@ -287,9 +287,20 @@ int main(int argc, char ** argv)
             cout << reader.gtPose << endl;
 
         //============ Process Current Frame ============//
+        cout << reader.currentFrameId << '\n';
+
         core.processFrame(reader.rgb, reader.depth, reader.semantic, &reader.gtPose);
 
-        cout << reader.currentFrameId << '\n';
+
+
+        if(reader.currentFrameId > 0)
+        {
+            core.checker->genRandomIds(20, 0, core.checker->vertexNums["Conf"]);
+            core.checker->showIds();
+            vector<int> layout{1, 4};
+            core.checker->showVertexfRandom("Conf", 5, layout);
+        }
+
 
 
 /*
