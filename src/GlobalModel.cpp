@@ -2,13 +2,10 @@
 
 #include "GlobalModel.h"
 
-const int GlobalModel::TEXTURE_DIMENSION = 3072;
-const int GlobalModel::MAX_VERTICES = GlobalModel::TEXTURE_DIMENSION * GlobalModel::TEXTURE_DIMENSION;
-//const int GlobalModel::NODE_TEXTURE_DIMENSION = 16384;
-//const int GlobalModel::MAX_NODES = GlobalModel::NODE_TEXTURE_DIMENSION / 16; //16 floats per node
-
 GlobalModel::GlobalModel()
- : bufferSize(MAX_VERTICES * Config::vertexSize()),
+ : TEXTURE_DIMENSION(Config::maxSqrtVertices()),
+   MAX_VERTICES(TEXTURE_DIMENSION * TEXTURE_DIMENSION),
+   bufferSize(MAX_VERTICES * Config::vertexSize()),
    count(0),
    offset(0),
    dataCount(0),
@@ -665,7 +662,7 @@ void GlobalModel::renderModel(pangolin::OpenGlMatrix mvp,
 
     program->setUniform(Uniform("MVP", mvp));
 
-    program->setUniform(Uniform("MV", mv.Inverse()));
+    program->setUniform(Uniform("MVINV", mv.Inverse()));
 
     program->setUniform(Uniform("threshold", threshold));
 

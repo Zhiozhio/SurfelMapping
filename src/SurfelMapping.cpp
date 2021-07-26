@@ -110,7 +110,6 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
     if(semantic)
         textures[GPUTexture::SEMANTIC]->texture->Upload(semantic, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
 
-//    checker->retrieveTexture1u("sem", textures["SEMANTIC"]->texture);
 
     TICK("Preprocess");
 
@@ -133,14 +132,6 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
         globalModel.initialize(*feedbackBuffers[FeedbackBuffer::RAW], currPose);
 
         globalModel.buildModelMap();  // build model map each time modelVbo is updated
-
-//        checker->retrieveVertexf("Model Old", globalModel.getModel().first, globalModel.getModel().second);
-//
-//        checker->retrieveTexture4f("PosConf", globalModel.getModelMapVC(), );
-//        checker->retrieveTexture4f("ColorTime", globalModel.getModelMapCT());
-//        checker->retrieveTexture4f("NormRad", globalModel.getModelMapNR());
-
-        //frameToModel.initFirstRGB(texturefs[GPUTexture::RGB]);
     }
     else
     {
@@ -161,26 +152,18 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 
         std::cout << "Conflict Num: " << globalModel.getConflict().second << '\n';
 
-        //checker->retrieveVertexf("Conf", globalModel.getConflict().first, globalModel.getConflict().second);
-
         globalModel.updateConflict();
-
-        //checker->retrieveTexture4f("VertConf", globalModel.getModelMapVC(), globalModel.getModel().second);
 
         globalModel.backMapping();
 
         std::cout << "Model Num after conflict: " << globalModel.getModel().second << " so removed: " << lastCount - globalModel.getModel().second << '\n';
 
         globalModel.buildModelMap();
-
-
         TOCK("Conflict");
 
         TICK("indexMap");
         indexMap.predictIndices(currPose, tick, globalModel.getModel(), farClipDepth, 200);
         TOCK("indexMap");
-
-//        checker->retrieveTexture1i("IndexMap", indexMap.indexTex()->texture);
 
         globalModel.dataAssociate(currPose,
                                   tick,
@@ -194,68 +177,23 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
                                   nearClipDepth,
                                   farClipDepth);
 
-//        checker->retrieveVertexf("Data", globalModel.getData().first, globalModel.getData().second);
-//        checker->retrieveVertexf("Conflict", globalModel.getConflict().first, globalModel.getConflict().second);
-
         std::cout << "Data Association Num: " << globalModel.getData().second << '\n';
 
         globalModel.updateFuse();
 
-
-
-
-//        checker->retrieveTexture4f("PosConfII", globalModel.getModelMapVC(), globalModel.getModel().second);
-//        checker->retrieveTexture4f("ColorTimeII", globalModel.getModelMapCT(), globalModel.getModel().second);
-//        checker->retrieveTexture4f("NormRadII", globalModel.getModelMapNR(), globalModel.getModel().second);
-
         globalModel.backMapping();
 
         std::cout << "Model Num after Update Fuse: " << globalModel.getModel().second << '\n';
-
-//        checker->retrieveVertexf("ModelII", globalModel.getModel().first, globalModel.getOffset());
 
         globalModel.concatenate();
 
         std::cout << "New Model Num: " << globalModel.getUnstable().second << '\n'
                   << "Total Model: " << globalModel.getModel().second << std::endl;
 
-//        checker->retrieveVertexf("Unstable", globalModel.getUnstable().first, globalModel.getUnstable().second);
-
-//        checker->retrieveVertexf("Model New", globalModel.getModel().first, globalModel.getModel().second);
-
         globalModel.buildModelMap();  // build model map each time modelVbo is updated
 
-//        checker->retrieveVertexf(globalModel.getModel().first, globalModel.getModel().second);
-//
-//        checker->retrieveTexture4f("PosConf", globalModel.getModelMapVC());
-//        checker->retrieveTexture4f("ColorTime", globalModel.getModelMapCT());
-//        checker->retrieveTexture4f("NormRad", globalModel.getModelMapNR());
-
         CheckGlDieOnError();
-//
-//        TICK("indexMap");
-//        indexMap.predictIndices(currPose, tick, globalModel.model(), maxDepthProcessed, timeDelta);
-//        TOCK("indexMap");
-//
-//        // todo: seems not reasonable of this shader
-//        globalModel.clean(currPose,
-//                          tick,
-//                          indexMap.indexTex(),
-//                          indexMap.vertConfTex(),
-//                          indexMap.colorTimeTex(),
-//                          indexMap.normalRadTex(),
-//                          indexMap.depthTex(),
-//                          confidenceThreshold,
-//                          rawGraph,
-//                          timeDelta,
-//                          maxDepthProcessed,
-//                          fernAccepted);
-
     }
-
-    //TICK("Predict");  No need for odometry temporarily. (predict is for odometry)
-    //predict();
-    //TOCK("Predict");
 
     ++tick;
 

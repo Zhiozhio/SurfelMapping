@@ -31,15 +31,4 @@ void main()
         discard;
         
     FragColor = vec4(vColor0, 1.0f);
-
-	/*
-    if(unstablePoint == 1)
-	{
-		gl_FragDepth = gl_FragCoord.z + radius;
-	}
-    else
-   	{
-   		gl_FragDepth = gl_FragCoord.z;
-   	}
-   	*/
 }

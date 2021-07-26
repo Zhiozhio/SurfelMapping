@@ -278,6 +278,8 @@ int main(int argc, char ** argv)
 
     SurfelMapping core;
 
+    CheckGlDieOnError();
+
 
     int lastModel = 0;
     while (reader.getNext())

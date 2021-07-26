@@ -185,6 +185,7 @@ void main()
                 vNormRad = ((c_n * vec4(vNormLocal, radii_n)) + (c_o * normRadLocal_o)) / (c_n + c_o);
                 vNormRad.xyz = mat3(pose) * vNormRad.xyz;
                 vNormRad.xyz = normalize(vNormRad.xyz);
+                vNormRad.w = radii_n > normRadLocal_o.w ? normRadLocal_o.w : radii_n;
             }
             else // still the old
             {

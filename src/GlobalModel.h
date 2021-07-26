@@ -20,10 +20,8 @@ public:
 
     void initialize(const FeedbackBuffer & rawFeedback, const Eigen::Matrix4f &pose);
 
-    static const int TEXTURE_DIMENSION;
-    static const int MAX_VERTICES;
-    //        static const int NODE_TEXTURE_DIMENSION;
-    //        static const int MAX_NODES;
+    const int TEXTURE_DIMENSION;
+    const int MAX_VERTICES;
 
     void renderModel(pangolin::OpenGlMatrix mvp,
                      pangolin::OpenGlMatrix mv,

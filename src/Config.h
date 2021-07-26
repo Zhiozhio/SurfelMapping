@@ -29,6 +29,8 @@ public:
     static float &farClip() { return getInstance().far_clip; }
     static float &surfelFuseDistanceThresh() { return getInstance().surfel_fuse_distance_threshold; }
 
+    static int &maxSqrtVertices() { return getInstance().max_sqrt_vertices; }
+
     static std::string shaderDir()
     {
 #ifdef SHADER_DIR
@@ -47,6 +49,8 @@ private:
     float near_clip;
     float far_clip;
     float surfel_fuse_distance_threshold;
+
+    int max_sqrt_vertices;
 
     // --------------
     Config(float fx, float fy, float cx, float cy, int rows, int cols);

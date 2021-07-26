@@ -23,7 +23,7 @@ layout (location = 1) in vec4 color;
 layout (location = 2) in vec4 normal;
 
 uniform mat4 MVP;
-uniform mat4 MV;
+uniform mat4 MVINV;
 uniform float threshold;
 uniform int colorType;
 uniform int unstable;
@@ -36,7 +36,7 @@ out vec4 vColor;
 out vec4 vPosition;
 out vec4 vNormRad;
 out mat4 vMVP;
-out mat4 vMV;
+out mat4 vMVINV;
 out int vTime;
 out int colorType0;
 out int drawWindow0;
@@ -55,7 +55,7 @@ void main()
         vNormRad.w = normal.w;
 
 	    vMVP = MVP;
-        vMV = MV;
+        vMVINV = MVINV;
 	    vTime = time;
 	    timeDelta0 = timeDelta;
 	    gl_Position = MVP * vec4(vPosition.xyz, 1.0);
