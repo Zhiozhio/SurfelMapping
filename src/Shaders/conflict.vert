@@ -12,6 +12,7 @@ uniform vec4 cam; //cx, cy, fx, fy
 uniform float cols;
 uniform float rows;
 uniform mat4 t_inv;
+uniform float fuseThresh;
 
 out int conf_id;
 out vec4 conf_posConf;
@@ -50,7 +51,7 @@ void main()
         float x = 0;
         float y = 0;
 
-        if(depth * lambda - vPosHome.z * lambda >= 0.2 )  // closer than the mewest measurement
+        if(depth * lambda - vPosHome.z * lambda >= fuseThresh )  // closer than the mewest measurement
         {
             // x, y is NDC coordinate
             x = (u - (cols * 0.5)) / (cols * 0.5);

@@ -49,7 +49,7 @@ public:
                        float depthMin,
                        float depthMax);
 
-    void update();
+    void updateFuse();
 
     void backMapping();
 

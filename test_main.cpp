@@ -292,7 +292,7 @@ int main(int argc, char ** argv)
         core.processFrame(reader.rgb, reader.depth, reader.semantic, &reader.gtPose);
 
 
-
+/*
         if(reader.currentFrameId > 0)
         {
             core.checker->genRandomIds(20, 0, core.checker->vertexNums["Conf"]);
@@ -315,7 +315,7 @@ int main(int argc, char ** argv)
 
 
         }
-
+*/  // debug Conflict
 
 
 /*

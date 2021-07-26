@@ -27,6 +27,7 @@ public:
     static int &vertexSize() { return getInstance().vertex_size; }
     static float &nearClip() { return getInstance().near_clip; }
     static float &farClip() { return getInstance().far_clip; }
+    static float &surfelFuseDistanceThresh() { return getInstance().surfel_fuse_distance_threshold; }
 
     static std::string shaderDir()
     {
@@ -45,6 +46,7 @@ private:
     int vertex_size;
     float near_clip;
     float far_clip;
+    float surfel_fuse_distance_threshold;
 
     // --------------
     Config(float fx, float fy, float cx, float cy, int rows, int cols);

@@ -24,6 +24,7 @@ uniform mat4 pose;
 uniform float minDepth;
 uniform float maxDepth;
 uniform float time;
+uniform float fuseThresh;
 
 #include "surfels.glsl"
 #include "color.glsl"
@@ -142,7 +143,7 @@ void main()
                     uvec4 srgb = decodeColor(colorTime.x);
                     uint sem_o = srgb.x;
 
-                    if(sem_n == sem_o && abs(vertConf.z * lambda - vPosLocal.z * lambda) < 0.2)  // eyesight ray depth test // todo threshold
+                    if(sem_n == sem_o && abs(vertConf.z * lambda - vPosLocal.z * lambda) < fuseThresh)  // eyesight ray depth test // todo threshold
                     {
                         float dist = length(cross(ray, vertConf.xyz)) / length(ray);  // eyesight ray distance test
 

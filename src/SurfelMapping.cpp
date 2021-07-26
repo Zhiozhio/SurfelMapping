@@ -150,7 +150,8 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 
         currPose = *gtPose;
 
-        std::cout << "Last Model Num: " << globalModel.getModel().second << '\n';
+        unsigned int lastCount = globalModel.getModel().second;
+        std::cout << "Last Model Num: " << lastCount << '\n';
 
         TICK("Conflict");
         globalModel.processConflict(currPose,
@@ -160,13 +161,17 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 
         std::cout << "Conflict Num: " << globalModel.getConflict().second << '\n';
 
-        checker->retrieveVertexf("Conf", globalModel.getConflict().first, globalModel.getConflict().second);
+        //checker->retrieveVertexf("Conf", globalModel.getConflict().first, globalModel.getConflict().second);
 
         globalModel.updateConflict();
 
-        checker->retrieveTexture4f("VertConf", globalModel.getModelMapVC(), globalModel.getModel().second);
+        //checker->retrieveTexture4f("VertConf", globalModel.getModelMapVC(), globalModel.getModel().second);
 
-        
+        globalModel.backMapping();
+
+        std::cout << "Model Num after conflict: " << globalModel.getModel().second << " so removed: " << lastCount - globalModel.getModel().second << '\n';
+
+        globalModel.buildModelMap();
 
 
         TOCK("Conflict");
@@ -192,7 +197,9 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 //        checker->retrieveVertexf("Data", globalModel.getData().first, globalModel.getData().second);
 //        checker->retrieveVertexf("Conflict", globalModel.getConflict().first, globalModel.getConflict().second);
 
-        globalModel.update();
+        std::cout << "Data Association Num: " << globalModel.getData().second << '\n';
+
+        globalModel.updateFuse();
 
 
 
@@ -203,9 +210,14 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 
         globalModel.backMapping();
 
+        std::cout << "Model Num after Update Fuse: " << globalModel.getModel().second << '\n';
+
 //        checker->retrieveVertexf("ModelII", globalModel.getModel().first, globalModel.getOffset());
 
         globalModel.concatenate();
+
+        std::cout << "New Model Num: " << globalModel.getUnstable().second << '\n'
+                  << "Total Model: " << globalModel.getModel().second << std::endl;
 
 //        checker->retrieveVertexf("Unstable", globalModel.getUnstable().first, globalModel.getUnstable().second);
 
