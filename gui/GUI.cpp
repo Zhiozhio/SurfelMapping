@@ -103,6 +103,8 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         drawGlobalModel = new pangolin::Var<int>("ui.Draw global model", 2, 0, 5);
         save = new pangolin::Var<bool>("ui.Save", false, false);
         reset = new pangolin::Var<bool>("ui.Reset", false, false);
+        pathMode = new pangolin::Var<bool>("ui.Path Mode", false, true);
+
         //    drawColors = new pangolin::Var<bool>("ui.Draw colors", showcaseMode, true);
         //    drawFxaa = new pangolin::Var<bool>("ui.Draw FXAA", showcaseMode, true);
         //    drawNormals = new pangolin::Var<bool>("ui.Draw normals", false, true);
@@ -145,9 +147,9 @@ GUI::~GUI()
     delete depthNormTexture;
 }
 
-void GUI::preCall()
+void GUI::preCall(float *backgroundColor)
 {
-    glClearColor(0.05, 0.05, 0.3, 0.0f);
+    glClearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2], backgroundColor[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     width = pangolin::DisplayBase().v.w;

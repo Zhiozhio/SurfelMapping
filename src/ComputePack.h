@@ -31,7 +31,7 @@ class ComputePack
         virtual ~ComputePack();
 
         // type of compute packs
-        static const std::string FILTER, METRIC;
+        static const std::string FILTER, METRIC, SMOOTH;
 
         void compute(pangolin::GlTexture * target, pangolin::GlTexture * input, const std::vector<Uniform> * uniforms = 0);
 

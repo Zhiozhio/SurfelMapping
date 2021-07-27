@@ -28,7 +28,7 @@ public:
     virtual ~GUI();
 
 
-    void preCall();
+    void preCall(float *backgroundColor);
 
     /**
      * You can draw any thing here at the top right of the main screen
@@ -92,6 +92,7 @@ public:
                         * save,
                         * reset,
                         * followPose,
+                        * pathMode,
                         * drawFxaa;
 
     pangolin::Var<int> * gpuMem,

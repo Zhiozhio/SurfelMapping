@@ -67,6 +67,7 @@ public:
      */
     const Eigen::Matrix4f & getCurrPose();
 
+    const std::vector<Eigen::Matrix4f> & getHistoryPoses();
 
 
     /**
@@ -97,7 +98,6 @@ private:
 
     IndexMap indexMap;
     GlobalModel globalModel;
-//    FillIn fillIn;
 
     std::map<std::string, GPUTexture*> textures;
     std::map<std::string, ComputePack*> computePacks;
@@ -105,6 +105,8 @@ private:
 
     float nearClipDepth;
     float farClipDepth;
+
+    std::vector<Eigen::Matrix4f> historyPoses;
 
 
     void createTextures();

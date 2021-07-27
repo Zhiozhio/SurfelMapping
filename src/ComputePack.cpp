@@ -20,6 +20,7 @@
 
 const std::string ComputePack::FILTER = "FILTER";
 const std::string ComputePack::METRIC = "METRIC";
+const std::string ComputePack::SMOOTH = "SMOOTH";
 
 ComputePack::ComputePack(std::shared_ptr<Shader> program)
  : program(program)

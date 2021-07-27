@@ -83,9 +83,9 @@ void SurfelMapping::createCompute()
                                                                                   "quad.geom",
                                                                                   "depth_metric.frag"));
 
-    computePacks["SMOOTH"] = new ComputePack(loadProgramFromFile("empty.vert",
-                                                                 "quad.geom",
-                                                                 "depth_smooth.frag"));
+    computePacks[ComputePack::SMOOTH] = new ComputePack(loadProgramFromFile("empty.vert",
+                                                                                    "quad.geom",
+                                                                                    "depth_smooth.frag"));
 }
 
 void SurfelMapping::createFeedbackBuffers()
@@ -195,6 +195,7 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
         CheckGlDieOnError();
     }
 
+    historyPoses.push_back(currPose);
     ++tick;
 
     TOCK("Run");
@@ -308,6 +309,11 @@ FeedbackBuffer * SurfelMapping::getFeedbackBuffer(const std::string &feedbackTyp
 const Eigen::Matrix4f & SurfelMapping::getCurrPose()
 {
     return currPose;
+}
+
+const std::vector<Eigen::Matrix4f> & SurfelMapping::getHistoryPoses()
+{
+    return historyPoses;
 }
 
 GlobalModel & SurfelMapping::getGlobalModel()
