@@ -94,8 +94,6 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         // set panel
         pause = new pangolin::Var<bool>("ui.Pause", true, true);
         step = new pangolin::Var<bool>("ui.Step", false, false);
-        //    save = new pangolin::Var<bool>("ui.Save", false, false);
-        //    reset = new pangolin::Var<bool>("ui.Reset", false, false);
 
         //    depthCutoff = new pangolin::Var<float>("ui.Depth cutoff", 3.0, 0.0, 12.0);
         //
@@ -103,6 +101,8 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         drawRawCloud = new pangolin::Var<int>("ui.Draw raw", 0, 0, 5);
         //drawFilteredCloud = new pangolin::Var<int>("ui.Draw filtered", 0, 0, 4);
         drawGlobalModel = new pangolin::Var<int>("ui.Draw global model", 2, 0, 5);
+        save = new pangolin::Var<bool>("ui.Save", false, false);
+        reset = new pangolin::Var<bool>("ui.Reset", false, false);
         //    drawColors = new pangolin::Var<bool>("ui.Draw colors", showcaseMode, true);
         //    drawFxaa = new pangolin::Var<bool>("ui.Draw FXAA", showcaseMode, true);
         //    drawNormals = new pangolin::Var<bool>("ui.Draw normals", false, true);
@@ -158,13 +158,6 @@ void GUI::preCall()
 
 void GUI::postCall()
 {
-    //    GLint cur_avail_mem_kb = 0;
-    //    glGetIntegerv(GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX, &cur_avail_mem_kb);
-    //
-    //    int memFree = cur_avail_mem_kb / 1024;
-    //
-    //    gpuMem->operator=(memFree);
-
     pangolin::FinishFrame();
 
     glFinish();

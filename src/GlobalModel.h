@@ -71,7 +71,7 @@ public:
     pangolin::GlTexture * getModelMapCT();
     pangolin::GlTexture * getModelMapNR();
 
-    Eigen::Vector4f * downloadMap();
+    bool downloadMap(const std::string &path);
 
     std::pair<GLuint, GLuint> getModel();
 

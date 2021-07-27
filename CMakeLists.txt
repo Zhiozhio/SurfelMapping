@@ -13,6 +13,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -O0 -std=c++11 -DSHADER_DIR=${S
 set(CMAKE_BUILD_TYPE Debug)
 
 
+set(BUILD_TEST 1)
 
 
 find_package(Pangolin 0.1 REQUIRED)
@@ -63,8 +64,15 @@ target_link_libraries(surmap_gui
         ${Pangolin_LIBRARIES}
 )
 
+add_executable(build_map build_map.cpp)
 
-add_executable(test test_main.cpp)
+target_link_libraries(build_map surmap_gui surfelmapping)
 
-target_link_libraries(test surmap_gui surfelmapping)
+
+if (BUILD_TEST)
+    add_executable(test test_main.cpp)
+
+    target_link_libraries(test surmap_gui surfelmapping)
+endif ()
+
 

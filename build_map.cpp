@@ -1,0 +1,196 @@
+//
+// Created by zhijun on 2021/7/27.
+//
+
+#include "KittiReader.h"
+#include "SurfelMapping.h"
+#include "GUI.h"
+#include "Checker.h"
+
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
+#include <iostream>
+#include <vector>
+#include <set>
+#include <ctime>
+
+using namespace std;
+
+
+void rungui(SurfelMapping & core, GUI & gui)
+{
+    //============ Here is GUI ============//
+    if(gui.getMode() == GUI::ShowMode::minimum)
+        return;
+
+
+    if(gui.getMode() == GUI::ShowMode::supervision)
+    {
+        pangolin::GlTexture *rgb = core.getTexture(GPUTexture::RGB);
+        pangolin::GlTexture *depth = core.getTexture(GPUTexture::DEPTH_METRIC);
+        pangolin::GlTexture *semantic = core.getTexture("SEMANTIC");
+
+        Eigen::Matrix4f pose = core.getCurrPose();
+
+
+        bool run_gui = true;
+        while(run_gui)
+        {
+            if(gui.followPose->Get())
+            {
+                pangolin::OpenGlMatrix mv;
+
+                Eigen::Matrix3f currRot = pose.topLeftCorner(3, 3);
+
+                Eigen::Quaternionf currQuat(currRot);
+                Eigen::Vector3f forwardVector(0, 0, 1);
+                Eigen::Vector3f upVector(0, -1, 0);
+
+                Eigen::Vector3f forward = (currRot * forwardVector).normalized();
+                Eigen::Vector3f up = (currRot * upVector).normalized();
+
+                Eigen::Vector3f viewAt(pose(0, 3), pose(1, 3), pose(2, 3));
+
+                Eigen::Vector3f eye = viewAt - forward;
+
+                Eigen::Vector3f z = (eye - viewAt).normalized();  // Forward, OpenGL camera z direction
+                Eigen::Vector3f x = up.cross(z).normalized();     // Right
+                Eigen::Vector3f y = z.cross(x);                   // Up
+
+                Eigen::Matrix4d m;                                // [R; U; F]_4x4 * [E; -eye]_4x4
+                m << x(0),  x(1),  x(2),  -(x.dot(eye)),
+                        y(0),  y(1),  y(2),  -(y.dot(eye)),
+                        z(0),  z(1),  z(2),  -(z.dot(eye)),
+                        0,     0,     0,      1;
+
+                memcpy(&mv.m[0], m.data(), sizeof(Eigen::Matrix4d));
+
+                gui.s_cam.SetModelViewMatrix(mv);
+            }
+
+
+            gui.preCall();
+
+            //============ draw single frame surfel point cloud
+            int cloud_mode = gui.drawRawCloud->Get();
+            if(cloud_mode)
+                core.getFeedbackBuffer(FeedbackBuffer::RAW)->render(gui.s_cam.GetProjectionModelViewMatrix(),
+                                                                    pose,
+                                                                    cloud_mode == 2,
+                                                                    cloud_mode == 3,
+                                                                    cloud_mode == 4,
+                                                                    cloud_mode == 5);
+
+            //============ draw global model
+            int surfel_mode = gui.drawGlobalModel->Get();
+
+            if(surfel_mode)
+                core.getGlobalModel().renderModel(gui.s_cam.GetProjectionModelViewMatrix(),
+                                                  gui.s_cam.GetModelViewMatrix(),
+                                                  0.0,
+                                                  true,
+                                                  surfel_mode == 3,
+                                                  surfel_mode == 4,
+                                                  surfel_mode == 1,
+                                                  false,
+                                                  surfel_mode == 5,
+                                                  3,
+                                                  3);
+
+
+
+            gui.drawCapacity(core.getGlobalModel().getModelMapNR());
+
+            gui.drawFrustum(core.getCurrPose());
+
+
+
+            //============ draw raw image data (must be after "cam")
+            gui.displayImg("rgb", rgb);
+            //gui.normalizeDepth(rgb, 1.0f, 60.0f);
+            //gui.displayImg("rgb", gui.getDepthNorm());
+
+            gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
+            gui.displayImg("depth", gui.depthNormTexture);
+
+
+            gui.processSemantic(semantic);
+            gui.displayImg("semantic", gui.semanticTexture);
+
+
+            gui.postCall();
+
+
+            //====== Save model
+            if(pangolin::Pushed(*gui.save))
+            {
+                std::string output_path = "/home/zhijun/myProjects/SurfelMapping/";
+
+                time_t rawtime;
+                struct tm *info;
+
+                time(&rawtime);
+                info = gmtime(&rawtime);
+
+                std::string file_name = "surfel_map_" + to_string(info->tm_year + 1900) + "_"
+                                                      + to_string(info->tm_mon + 1) + "_"
+                                                      + to_string(info->tm_mday) + "_"
+                                                      + to_string(info->tm_hour)
+                                                      + to_string(info->tm_min)
+                                                      + to_string(info->tm_sec) + ".csv";
+
+                output_path += file_name;
+
+                core.getGlobalModel().downloadMap(output_path);
+            }
+
+            if(gui.reset->Get())
+            {
+
+            }
+
+
+            run_gui = gui.pause->Get() && !pangolin::Pushed(*gui.step);
+        }
+
+
+    }
+}
+
+
+
+int main(int argc, char ** argv)
+{
+    std::string kittiDir(argv[1]);
+
+    KittiReader reader(kittiDir, false, true, 0, true);
+
+    // Initialize the Config in first call with correct arguments
+    Config::getInstance(reader.fx(), reader.fy(), reader.cx(), reader.cy(), reader.H(), reader.W());
+
+    GUI gui(reader.W(), reader.H(), GUI::ShowMode::supervision);
+
+    SurfelMapping core;
+
+    CheckGlDieOnError();
+
+    while (reader.getNext())
+    {
+        //============ Process Current Frame ============//
+        cout << reader.currentFrameId << '\n';
+
+        core.processFrame(reader.rgb, reader.depth, reader.semantic, &reader.gtPose);
+
+        // show what you want
+        rungui(core, gui);
+
+        usleep(50000);
+
+    }
+
+    // show after loop
+    rungui(core, gui);
+
+
+}

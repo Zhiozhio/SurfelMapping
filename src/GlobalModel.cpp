@@ -761,32 +761,52 @@ unsigned int GlobalModel::getOffset()
     return offset;
 }
 
-Eigen::Vector4f * GlobalModel::downloadMap()
+bool GlobalModel::downloadMap(const std::string &path)
 {
-//    glFinish();
-//
-//    Eigen::Vector4f * vertices = new Eigen::Vector4f[count * 3];
-//
-//    memset(&vertices[0], 0, count * Vertex::SIZE);
-//
-//    GLuint downloadVbo;
-//
-//    glGenBuffers(1, &downloadVbo);
-//    glBindBuffer(GL_ARRAY_BUFFER, downloadVbo);
-//    glBufferData(GL_ARRAY_BUFFER, bufferSize, 0, GL_STREAM_DRAW);
-//    glBindBuffer(GL_ARRAY_BUFFER, 0);
-//
-//    glBindBuffer(GL_COPY_READ_BUFFER, vbos[renderSource].first);
-//    glBindBuffer(GL_COPY_WRITE_BUFFER, downloadVbo);
-//
-//    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, count * Vertex::SIZE);
-//    glGetBufferSubData(GL_COPY_WRITE_BUFFER, 0, count * Vertex::SIZE, vertices);
-//
-//    glBindBuffer(GL_COPY_READ_BUFFER, 0);
-//    glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-//    glDeleteBuffers(1, &downloadVbo);
-//
-//    glFinish();
-//
-//    return vertices;
+    glFinish();
+
+    Eigen::Vector4f * vertices = new Eigen::Vector4f[count * 3];
+
+    memset(&vertices[0], 0, count * Config::vertexSize());
+
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, modelVbo);
+    glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, count * Config::vertexSize(), vertices);
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 0);
+
+    glFinish();
+
+    CheckGlDieOnError()
+
+    Eigen::IOFormat CSVFormat(Eigen::FullPrecision, 0, ",", ",");
+
+    std::ofstream file(path);
+
+    //std::cout << vertices[0].format(CSVFormat) << ','
+    //          << vertices[1].format(CSVFormat) << ','
+    //          << vertices[2].format(CSVFormat) << std::endl;
+
+    try
+    {
+        if(file.is_open())
+        {
+            for(int i = 0; i < count; ++i)
+            {
+                file << vertices[3 * i + 0].format(CSVFormat) << ","
+                     << vertices[3 * i + 1].format(CSVFormat) << ","
+                     << vertices[3 * i + 2].format(CSVFormat) << '\n';
+            }
+            file.close();
+
+            printf("%s is saved!", path.c_str());
+        }
+        else
+        {
+            printf("%s is not open!", path.c_str());
+        }
+    }
+    catch (std::ofstream::failure &e)
+    {
+        std::cerr << path << " saved err!!" << " " << e.what();
+    }
+
 }
