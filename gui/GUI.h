@@ -93,7 +93,7 @@ public:
                         * reset,
                         * followPose,
                         * pathMode,
-                        * drawFxaa;
+                        * acquireImage;
 
     pangolin::Var<int> * gpuMem,
                        // define draw mode: 0 - none, 1 - mono, 2 - normal, 3 - color, 4 - semantic, 5 - surfel

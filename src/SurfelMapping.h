@@ -80,14 +80,8 @@ public:
      */
     void savePly();
 
-    /**
-     * Renders a normalised view of the input raw depth for displaying as an OpenGL texture
-     * (this is stored under texturefs[GPUTexture::DEPTH_NORM]
-     * @param minVal minimum depth value to render
-     * @param maxVal maximum depth value to render
-     */
-    void normaliseDepth(const float & minVal, const float & maxVal);
-
+    void acquireImages(const std::string &path, const std::vector<Eigen::Matrix4f> &views,
+                       int w, int h, float fx, float fy, float cx, float cy);
 
     Checker * checker;
 

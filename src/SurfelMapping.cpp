@@ -3,6 +3,7 @@
 //
 
 #include "SurfelMapping.h"
+#include <iomanip>
 
 SurfelMapping::SurfelMapping()
 : tick(0),
@@ -142,7 +143,7 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
         currPose = *gtPose;
 
         unsigned int lastCount = globalModel.getModel().second;
-        std::cout << "Last Model Num: " << lastCount << '\n';
+//        std::cout << "Last Model Num: " << lastCount << '\n';
 
         TICK("Conflict");
         globalModel.processConflict(currPose,
@@ -150,13 +151,13 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
                                     textures[GPUTexture::DEPTH_FILTERED],
                                     textures[GPUTexture::SEMANTIC]);
 
-        std::cout << "Conflict Num: " << globalModel.getConflict().second << '\n';
+//        std::cout << "Conflict Num: " << globalModel.getConflict().second << '\n';
 
         globalModel.updateConflict();
 
         globalModel.backMapping();
 
-        std::cout << "Model Num after conflict: " << globalModel.getModel().second << " so removed: " << lastCount - globalModel.getModel().second << '\n';
+//        std::cout << "Model Num after conflict: " << globalModel.getModel().second << " so removed: " << lastCount - globalModel.getModel().second << '\n';
 
         globalModel.buildModelMap();
         TOCK("Conflict");
@@ -177,18 +178,18 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
                                   nearClipDepth,
                                   farClipDepth);
 
-        std::cout << "Data Association Num: " << globalModel.getData().second << '\n';
+//        std::cout << "Data Association Num: " << globalModel.getData().second << '\n';
 
         globalModel.updateFuse();
 
         globalModel.backMapping();
 
-        std::cout << "Model Num after Update Fuse: " << globalModel.getModel().second << '\n';
+//        std::cout << "Model Num after Update Fuse: " << globalModel.getModel().second << '\n';
 
         globalModel.concatenate();
 
-        std::cout << "New Model Num: " << globalModel.getUnstable().second << '\n'
-                  << "Total Model: " << globalModel.getModel().second << std::endl;
+//        std::cout << "New Model Num: " << globalModel.getUnstable().second << '\n'
+//                  << "Total Model: " << globalModel.getModel().second << std::endl;
 
         globalModel.buildModelMap();  // build model map each time modelVbo is updated
 
@@ -288,6 +289,27 @@ void SurfelMapping::computeFeedbackBuffers()
                                                   tick,
                                                   farClipDepth);
     TOCK("feedbackBuffers");
+}
+
+void SurfelMapping::acquireImages(const std::string &path, const std::vector<Eigen::Matrix4f> &views,
+                                  int w, int h, float fx, float fy, float cx, float cy)
+{
+    globalModel.setImageSize(w, h, fx, fy, cx, cy);
+
+    int index = 0;
+    for(const auto &v : views)
+    {
+        //std::cout << v << std::endl;
+
+        std::stringstream ss;
+        ss << std::setfill('0') << std::setw(6) << index;
+        std::string file_name = path + ss.str() + ".png";
+        globalModel.renderImage(v, file_name);
+
+        index++;
+    }
+
+    globalModel.endRenderImage();
 }
 
 pangolin::GlTexture * SurfelMapping::getTexture(const std::string &textureType)

@@ -1,6 +1,8 @@
 
 
 #include "GlobalModel.h"
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 GlobalModel::GlobalModel()
  : TEXTURE_DIMENSION(Config::maxSqrtVertices()),
@@ -11,6 +13,7 @@ GlobalModel::GlobalModel()
    dataCount(0),
    conflictCount(0),
    unstableCount(0),
+   texturePtr(nullptr),
    initProgram(loadProgramFromFile("init_unstable.vert")),
    modelProgram(loadProgramFromFile("map.vert", "map.frag")),
    dataProgram(loadProgramGeomFromFile("data.vert", "data.geom")),
@@ -21,7 +24,9 @@ GlobalModel::GlobalModel()
    unstableProgram(loadProgramGeomFromFile("unstable.vert", "unstable.geom")),
    drawPointProgram(loadProgramFromFile("draw_feedback.vert", "draw_feedback.frag")),
    drawSurfelProgram(loadProgramFromFile("draw_surface.vert", "draw_surface_adaptive.geom", "draw_surface.frag")),
-   renderBuffer(TEXTURE_DIMENSION, TEXTURE_DIMENSION),
+   drawImageProgram(loadProgramFromFile("draw_image.vert", "draw_image.geom", "draw_image.frag")),
+   //drawImageProgram(loadProgramFromFile("empty.vert", "quad.geom", "draw_image.frag")),
+   modelMapRenderBuffer(TEXTURE_DIMENSION, TEXTURE_DIMENSION),
    vertConfRenderBuffer(TEXTURE_DIMENSION, TEXTURE_DIMENSION),
    modelMapVertsConfs(TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA32F, GL_RED, GL_FLOAT),
    modelMapColorsTime(TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA32F, GL_RED, GL_FLOAT),
@@ -86,13 +91,19 @@ GlobalModel::GlobalModel()
     glBufferData(GL_ARRAY_BUFFER, bigUvSize * sizeof(Eigen::Vector2f), &uv[0], GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    frameBuffer.AttachColour(*modelMapVertsConfs.texture);
-    frameBuffer.AttachColour(*modelMapColorsTime.texture);
-    frameBuffer.AttachColour(*modelMapNormsRadii.texture);
-    frameBuffer.AttachDepth(renderBuffer);
+    modelMapFramebuffer.AttachColour(*modelMapVertsConfs.texture);
+    modelMapFramebuffer.AttachColour(*modelMapColorsTime.texture);
+    modelMapFramebuffer.AttachColour(*modelMapNormsRadii.texture);
+    modelMapFramebuffer.AttachDepth(modelMapRenderBuffer);
 
     vertConfFrameBuffer.AttachColour(*modelMapVertsConfs.texture);
-    vertConfFrameBuffer.AttachDepth(renderBuffer);
+    vertConfFrameBuffer.AttachDepth(modelMapRenderBuffer);
+
+//    setImageSize(Config::W(), Config::H(), Config::fx(), Config::fy(), Config::cx(), Config::cy());
+//    imageFramebuffer.AttachColour(imageTexture);
+//    imageFramebuffer.AttachColour(semanticTexture);
+//    imageFramebuffer.AttachColour(depthTexture);
+//    imageFramebuffer.AttachDepth(imageRenderBuffer);
 
     //------------- specify the retrieved varyings
     initProgram->Bind();
@@ -325,11 +336,11 @@ void GlobalModel::updateFuse()
     TICK("Update::Fuse");
 
     // Change model map - I
-    frameBuffer.Bind();
+    modelMapFramebuffer.Bind();
 
     glPushAttrib(GL_VIEWPORT_BIT);
 
-    glViewport(0, 0, renderBuffer.width, renderBuffer.height);
+    glViewport(0, 0, modelMapRenderBuffer.width, modelMapRenderBuffer.height);
 
     glDisable(GL_DEPTH_TEST);
 
@@ -359,7 +370,7 @@ void GlobalModel::updateFuse()
 
     glPopAttrib();
 
-    frameBuffer.Unbind();
+    modelMapFramebuffer.Unbind();
 
     glFinish();
 
@@ -602,11 +613,11 @@ void GlobalModel::concatenate()
 
 void GlobalModel::buildModelMap()
 {
-    frameBuffer.Bind();
+    modelMapFramebuffer.Bind();
 
     glPushAttrib(GL_VIEWPORT_BIT);
 
-    glViewport(0, 0, renderBuffer.width, renderBuffer.height);
+    glViewport(0, 0, modelMapRenderBuffer.width, modelMapRenderBuffer.height);
 
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -626,7 +637,7 @@ void GlobalModel::buildModelMap()
     //glDrawTransformFeedback(GL_POINTS, modelFid);
     glDrawArrays(GL_POINTS, 0, count);
 
-    frameBuffer.Unbind();
+    modelMapFramebuffer.Unbind();
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
@@ -719,6 +730,93 @@ void GlobalModel::renderModel(pangolin::OpenGlMatrix mvp,
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     program->Unbind();
+}
+
+void GlobalModel::setImageSize(int w, int h, float fx, float fy, float cx, float cy)
+{
+    imageRenderBuffer.Reinitialise(w, h);
+    imageTexture.Reinitialise(w, h, GL_RGB8UI, true, 0, GL_RGB_INTEGER, GL_UNSIGNED_BYTE);
+    semanticTexture.Reinitialise(w, h, GL_R8UI, true, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
+    depthTexture.Reinitialise(w, h, GL_R16UI, true, 0, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
+
+    imageCam << cx, cy, fx, fy;
+
+    assert(texturePtr == nullptr && "Please call endRenderImage() after finish renderImage()!");
+
+    texturePtr = new unsigned char [w * h * 3];
+}
+
+void GlobalModel::renderImage(const Eigen::Matrix4f &view, std::string file)
+{
+    pangolin::GlFramebuffer imageFramebuffer;
+    imageFramebuffer.AttachColour(imageTexture);
+    //imageFramebuffer.AttachColour(semanticTexture);
+    //imageFramebuffer.AttachColour(depthTexture);
+    imageFramebuffer.AttachDepth(imageRenderBuffer);
+
+    imageFramebuffer.Bind();
+
+    glPushAttrib(GL_VIEWPORT_BIT);
+
+    glViewport(0, 0, imageRenderBuffer.width, imageRenderBuffer.height);
+
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    drawImageProgram->Bind();
+
+    Eigen::Matrix4f t_inv = view.inverse();
+    drawImageProgram->setUniform(Uniform("t_inv", t_inv));
+    drawImageProgram->setUniform(Uniform("cam", imageCam));
+    drawImageProgram->setUniform(Uniform("cols", (float)imageRenderBuffer.width));
+    drawImageProgram->setUniform(Uniform("rows", (float)imageRenderBuffer.height));
+    drawImageProgram->setUniform(Uniform("maxDepth", 200.f));
+    drawImageProgram->setUniform(Uniform("threshold", 0.f));
+
+    glBindBuffer(GL_ARRAY_BUFFER, modelVbo);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, Config::vertexSize(), 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, Config::vertexSize(), reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f) * 1));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, Config::vertexSize(), reinterpret_cast<GLvoid*>(sizeof(Eigen::Vector4f) * 2));
+
+    glDrawArrays(GL_POINTS, 0, count);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    drawImageProgram->Unbind();
+
+    glPopAttrib();
+
+    imageFramebuffer.Unbind();
+
+    glFinish();
+
+    CheckGlDieOnError()
+
+    //---------------------------------------------
+
+
+    imageTexture.Download(texturePtr, GL_RGB_INTEGER, GL_UNSIGNED_BYTE);
+
+    CheckGlDieOnError()
+
+    cv::Mat image(imageRenderBuffer.height, imageRenderBuffer.width, CV_8UC3);
+    memcpy(image.data, texturePtr, imageRenderBuffer.width * imageRenderBuffer.height * 3);
+
+    cv::imwrite(file, image);
+
+    usleep(100000);
+}
+
+void GlobalModel::endRenderImage()
+{
+    delete [] texturePtr;
+    texturePtr = nullptr;
 }
 
 pangolin::GlTexture * GlobalModel::getModelMapVC()

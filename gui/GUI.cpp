@@ -31,10 +31,6 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
     glDepthFunc(GL_LESS);
 
 
-    // internally render model at 3840x2160
-    int internal_render_width = 3840;
-    int internal_render_height = 2160;
-
 //    modelRenderBuffer = new pangolin::GlRenderBuffer(internal_render_width, internal_render_height);
 //    modelTexture = new pangolin::GlTexture(internal_render_width, internal_render_height, GL_RGBA32F, true, 0, GL_LUMINANCE, GL_FLOAT, NULL);
 //
@@ -103,7 +99,9 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         drawGlobalModel = new pangolin::Var<int>("ui.Draw global model", 2, 0, 5);
         save = new pangolin::Var<bool>("ui.Save", false, false);
         reset = new pangolin::Var<bool>("ui.Reset", false, false);
+
         pathMode = new pangolin::Var<bool>("ui.Path Mode", false, true);
+        acquireImage = new pangolin::Var<bool>("ui.Acquire Image", false, false);
 
         //    drawColors = new pangolin::Var<bool>("ui.Draw colors", showcaseMode, true);
         //    drawFxaa = new pangolin::Var<bool>("ui.Draw FXAA", showcaseMode, true);
@@ -130,7 +128,6 @@ GUI::~GUI()
     delete save;
     delete trackInliers;
     delete depthCutoff;
-    delete drawFxaa;
     delete followPose;
     delete drawRawCloud;
     delete totalPoints;

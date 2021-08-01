@@ -73,6 +73,12 @@ public:
 
     bool downloadMap(const std::string &path);
 
+    void setImageSize(int w, int h, float fx, float fy, float cx, float cy);
+
+    void renderImage(const Eigen::Matrix4f &view, std::string file = "");
+
+    void endRenderImage();
+
     std::pair<GLuint, GLuint> getModel();
 
     std::pair<GLuint, GLuint> getData();
@@ -113,6 +119,7 @@ private:
 
     std::shared_ptr<Shader> drawPointProgram;
     std::shared_ptr<Shader> drawSurfelProgram;
+    std::shared_ptr<Shader> drawImageProgram;
 
 
     //We render whole vertices into 3 texturefs. Must be synchronize with modelVbo
@@ -120,11 +127,22 @@ private:
     GPUTexture modelMapColorsTime;
     GPUTexture modelMapNormsRadii;
 
-    pangolin::GlFramebuffer frameBuffer;
-    pangolin::GlRenderBuffer renderBuffer;
+    pangolin::GlFramebuffer modelMapFramebuffer;
+    pangolin::GlRenderBuffer modelMapRenderBuffer;
 
     pangolin::GlFramebuffer vertConfFrameBuffer;
     pangolin::GlRenderBuffer vertConfRenderBuffer;
+
+
+    //pangolin::GlFramebuffer imageFramebuffer;
+    pangolin::GlRenderBuffer imageRenderBuffer;
+    pangolin::GlTexture imageTexture;
+    pangolin::GlTexture semanticTexture;
+    pangolin::GlTexture depthTexture;
+    Eigen::Vector4f imageCam;
+
+    unsigned char * texturePtr;
+
 
     GLuint uvo;
     int uvSize;

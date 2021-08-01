@@ -43,7 +43,6 @@ void rungui(SurfelMapping & core, GUI & gui)
 
                 Eigen::Matrix3f currRot = pose.topLeftCorner(3, 3);
 
-                Eigen::Quaternionf currQuat(currRot);
                 Eigen::Vector3f forwardVector(0, 0, 1);
                 Eigen::Vector3f upVector(0, -1, 0);
 
@@ -71,7 +70,7 @@ void rungui(SurfelMapping & core, GUI & gui)
 
 
             //====== Enter Path Mode until Complete
-            bool init_view = true;
+            bool initView = true;
             while(gui.pathMode->Get())
             {
                 float backColor[4] = {0, 0, 0, 0};
@@ -83,7 +82,6 @@ void rungui(SurfelMapping & core, GUI & gui)
                 Eigen::Matrix3f currRot;
                 currRot = Eigen::AngleAxis<float>(-M_PI_2, Eigen::Vector3f(1, 0, 0));
 
-                Eigen::Quaternionf currQuat(currRot);
                 Eigen::Vector3f forwardVector(0, 0, 1);
                 Eigen::Vector3f upVector(0, -1, 0);
 
@@ -91,7 +89,7 @@ void rungui(SurfelMapping & core, GUI & gui)
                 Eigen::Vector3f up = (currRot * upVector).normalized();
 
                 Eigen::Vector3f viewAt;
-                if(init_view)
+                if(initView)
                 {
                     viewAt = Eigen::Vector3f(pose(0, 3), -15, pose(2, 3));
                 }
@@ -119,10 +117,15 @@ void rungui(SurfelMapping & core, GUI & gui)
 
 
                 //=== draw all history frame
+                std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>> posVerts;
                 for(auto & p : core.getHistoryPoses())
                 {
                     gui.drawFrustum(p);
+                    posVerts.emplace_back(p.topRightCorner<3, 1>());
                 }
+                glColor3f(1.0f,1.0f,0.0f);
+                pangolin::glDrawVertices(posVerts, GL_LINE_STRIP);
+                glColor3f(1.0f,1.0f,1.0f);
 
                 //=== draw model
                 core.getGlobalModel().renderModel(gui.s_cam.GetProjectionModelViewMatrix(),
@@ -137,10 +140,24 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                   3,
                                                   3);
 
+                //=== If acquire iamges
+                if(pangolin::Pushed(*gui.acquireImage))
+                {
+                    const std::vector<Eigen::Matrix4f> & views = core.getHistoryPoses();  // todo this should get from gui
+                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/";
+
+                    core.acquireImages(data_path, views, Config::W(), Config::H(),
+                                                         Config::fx(), Config::fy(),
+                                                         Config::cx(), Config::cy());
+
+                    printf("|==== %d frames are saved. ====|\n", views.size());
+                    usleep(50000);
+                }
+
 
                 gui.postCall();
 
-                init_view = false;
+                initView = false;
             }
 
             float backColor[4] = {0.05, 0.05, 0.3, 0.0f};
@@ -196,7 +213,7 @@ void rungui(SurfelMapping & core, GUI & gui)
             //====== Save model
             if(pangolin::Pushed(*gui.save))
             {
-                std::string output_path = "/home/zhijun/myProjects/SurfelMapping/";
+                std::string output_path = "/home/zhijun/myProjects/SurfelMapping/";  // todo
 
                 time_t rawtime;
                 struct tm *info;
