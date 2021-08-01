@@ -81,7 +81,9 @@ public:
     void savePly();
 
     void acquireImages(const std::string &path, const std::vector<Eigen::Matrix4f> &views,
-                       int w, int h, float fx, float fy, float cx, float cy);
+                       int w, int h, float fx, float fy, float cx, float cy, int startId = 0);
+
+    void reset();
 
     Checker * checker;
 

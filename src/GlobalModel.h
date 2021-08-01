@@ -73,6 +73,8 @@ public:
 
     bool downloadMap(const std::string &path);
 
+    void resetBuffer();
+
     void setImageSize(int w, int h, float fx, float fy, float cx, float cy);
 
     void renderImage(const Eigen::Matrix4f &view, std::string file = "");
@@ -88,6 +90,8 @@ public:
     std::pair<GLuint, GLuint> getUnstable();
 
     unsigned int getOffset();
+
+    void clearBuffer(GLuint buffer, GLfloat value);
 
 private:
     GLuint modelVbo, modelFid;;                    // whole surfel buffer & its feedback ID

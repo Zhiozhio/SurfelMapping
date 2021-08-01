@@ -732,6 +732,18 @@ void GlobalModel::renderModel(pangolin::OpenGlMatrix mvp,
     program->Unbind();
 }
 
+void GlobalModel::resetBuffer()
+{
+    clearBuffer(modelVbo, 0.f);
+    count = 0;
+    clearBuffer(dataVbo, 0.f);
+    dataCount = 0;
+    clearBuffer(conflictVbo, 0.f);
+    conflictCount = 0;
+    clearBuffer(unstableVbo, 0.f);
+    unstableCount = 0;
+}
+
 void GlobalModel::setImageSize(int w, int h, float fx, float fy, float cx, float cy)
 {
     imageRenderBuffer.Reinitialise(w, h);
@@ -857,6 +869,17 @@ std::pair<GLuint, GLuint> GlobalModel::getUnstable()
 unsigned int GlobalModel::getOffset()
 {
     return offset;
+}
+
+void GlobalModel::clearBuffer(GLuint buffer, GLfloat value)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+
+    glClearBufferData(GL_ARRAY_BUFFER, GL_R32F, GL_RED, GL_FLOAT, &value);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    CheckGlDieOnError();
 }
 
 bool GlobalModel::downloadMap(const std::string &path)

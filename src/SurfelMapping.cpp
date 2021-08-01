@@ -292,24 +292,30 @@ void SurfelMapping::computeFeedbackBuffers()
 }
 
 void SurfelMapping::acquireImages(const std::string &path, const std::vector<Eigen::Matrix4f> &views,
-                                  int w, int h, float fx, float fy, float cx, float cy)
+                                  int w, int h, float fx, float fy, float cx, float cy, int startId)
 {
     globalModel.setImageSize(w, h, fx, fy, cx, cy);
 
-    int index = 0;
     for(const auto &v : views)
     {
         //std::cout << v << std::endl;
 
         std::stringstream ss;
-        ss << std::setfill('0') << std::setw(6) << index;
+        ss << std::setfill('0') << std::setw(6) << startId;
         std::string file_name = path + ss.str() + ".png";
         globalModel.renderImage(v, file_name);
 
-        index++;
+        startId++;
     }
 
     globalModel.endRenderImage();
+}
+
+void SurfelMapping::reset()
+{
+    globalModel.resetBuffer();
+    tick = 0;
+    historyPoses.clear();
 }
 
 pangolin::GlTexture * SurfelMapping::getTexture(const std::string &textureType)

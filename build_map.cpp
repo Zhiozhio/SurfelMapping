@@ -140,15 +140,18 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                   3,
                                                   3);
 
-                //=== If acquire iamges
+                //=== If acquire images
                 if(pangolin::Pushed(*gui.acquireImage))
                 {
-                    const std::vector<Eigen::Matrix4f> & views = core.getHistoryPoses();  // todo this should get from gui
-                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/";
+                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/";  // todo
+
+                    std::vector<Eigen::Matrix4f> views;
+                    int start_id = gui.getViews(views, core.getHistoryPoses());  // todo
 
                     core.acquireImages(data_path, views, Config::W(), Config::H(),
                                                          Config::fx(), Config::fy(),
-                                                         Config::cx(), Config::cy());
+                                                         Config::cx(), Config::cy(),
+                                                         start_id);
 
                     printf("|==== %d frames are saved. ====|\n", views.size());
                     usleep(50000);
@@ -234,9 +237,10 @@ void rungui(SurfelMapping & core, GUI & gui)
             }
 
             //====== Reset
-            if(gui.reset->Get())
+            if(pangolin::Pushed(*gui.reset))
             {
-
+                core.reset();
+                cout << "The whole model has been RESET!" << endl;
             }
 
 

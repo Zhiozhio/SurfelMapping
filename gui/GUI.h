@@ -73,7 +73,7 @@ public:
 
     ShowMode getMode() { return mode_; }
 
-
+    int getViews(std::vector<Eigen::Matrix4f> & newViews, const std::vector<Eigen::Matrix4f> & originViews);
 
 
 private:
@@ -127,6 +127,8 @@ public:
     pangolin::GlRenderBuffer * semanticRenderBuffer;
     std::shared_ptr<Shader> showSemanticProgram;
 
+
+    int renderedViewNum;
 };
 
 

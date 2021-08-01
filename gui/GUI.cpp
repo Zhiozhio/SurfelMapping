@@ -5,7 +5,8 @@
 #include "GUI.h"
 
 GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
-: mode_(mode)
+: mode_(mode),
+  renderedViewNum(0)
 {
     // whole GUI window size
     width = 1280;
@@ -329,12 +330,18 @@ void GUI::drawFrustum(const Eigen::Matrix4f &pose)
     glColor3f(1.0f, 1.0f, 1.0f);
 }
 
-
-
 void GUI::drawFXAA(pangolin::OpenGlMatrix mvp,
                    pangolin::OpenGlMatrix mv,
                    const std::pair<GLuint, GLuint> &model,
                    const float threshold, const int time, const int timeDelta, const bool invertNormals)
 {
 
+}
+
+int GUI::getViews(std::vector<Eigen::Matrix4f> &newViews, const std::vector<Eigen::Matrix4f> &originViews)
+{
+    newViews = originViews;
+    int lastRenderedViewNum = renderedViewNum;
+    renderedViewNum += newViews.size();
+    return lastRenderedViewNum;
 }
