@@ -71,15 +71,16 @@ public:
     pangolin::GlTexture * getModelMapCT();
     pangolin::GlTexture * getModelMapNR();
 
+    pangolin::GlTexture * getImageTex();
+    pangolin::GlTexture * getSemanticTex();
+
     bool downloadMap(const std::string &path);
 
     void resetBuffer();
 
     void setImageSize(int w, int h, float fx, float fy, float cx, float cy);
 
-    void renderImage(const Eigen::Matrix4f &view, std::string file = "");
-
-    void endRenderImage();
+    void renderImage(const Eigen::Matrix4f &view);
 
     std::pair<GLuint, GLuint> getModel();
 
@@ -144,8 +145,6 @@ private:
     pangolin::GlTexture semanticTexture;
     pangolin::GlTexture depthTexture;
     Eigen::Vector4f imageCam;
-
-    unsigned char * texturePtr;
 
 
     GLuint uvo;

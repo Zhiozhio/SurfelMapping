@@ -4,6 +4,9 @@
 
 #include "SurfelMapping.h"
 #include <iomanip>
+#include <sys/stat.h>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 SurfelMapping::SurfelMapping()
 : tick(0),
@@ -291,9 +294,18 @@ void SurfelMapping::computeFeedbackBuffers()
     TOCK("feedbackBuffers");
 }
 
-void SurfelMapping::acquireImages(const std::string &path, const std::vector<Eigen::Matrix4f> &views,
+void SurfelMapping::acquireImages(std::string path, const std::vector<Eigen::Matrix4f> &views,
                                   int w, int h, float fx, float fy, float cx, float cy, int startId)
 {
+    auto texturePtr = new unsigned char [w * h * 3];
+    auto semanticPtr = new unsigned char [w * h];
+
+    if(path.back() != '/')  path += "/";
+    std::string image_path = path + "image/";
+    std::string semantic_path = path + "semantic/";
+    mkdir(image_path.c_str(), 0755);
+    mkdir(semantic_path.c_str(), 0755);
+
     globalModel.setImageSize(w, h, fx, fy, cx, cy);
 
     for(const auto &v : views)
@@ -302,13 +314,39 @@ void SurfelMapping::acquireImages(const std::string &path, const std::vector<Eig
 
         std::stringstream ss;
         ss << std::setfill('0') << std::setw(6) << startId;
-        std::string file_name = path + ss.str() + ".png";
-        globalModel.renderImage(v, file_name);
+        std::string file_name = ss.str() + ".png";
+
+        globalModel.renderImage(v);
+
+        //---------------------------------------------
+
+        globalModel.getImageTex()->Download(texturePtr, GL_RGB_INTEGER, GL_UNSIGNED_BYTE);
+
+        CheckGlDieOnError()
+
+        cv::Mat image(h, w, CV_8UC3);
+        memcpy(image.data, texturePtr, w * h * 3);
+
+        cv::imwrite(image_path + file_name, image);
+
+        //---------------------------------------------
+
+        globalModel.getSemanticTex()->Download(semanticPtr, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
+
+        CheckGlDieOnError()
+
+        cv::Mat semantic(h, w, CV_8UC1);
+        memcpy(semantic.data, semanticPtr, w * h);
+
+        cv::imwrite(semantic_path + file_name, semantic);
+
+        usleep(100000);
 
         startId++;
     }
 
-    globalModel.endRenderImage();
+    delete [] texturePtr;
+    delete [] semanticPtr;
 }
 
 void SurfelMapping::reset()

@@ -5,7 +5,9 @@ flat in uvec3 vBGR;
 in vec2 texcoord;
 flat in uint semantic;
 
-out uvec3 FragColor;
+layout(location = 0) out uvec3 FragColor;
+layout(location = 1) out uint FragSemantic;
+//layout(location = 2) out uint FragDepth;
 
 void main()
 {
@@ -13,6 +15,6 @@ void main()
         discard;
 
     FragColor = vBGR;
-    //FragSemantic = semantic;
+    FragSemantic = semantic;
     //FragDepth = 0U;
 }

@@ -1,8 +1,6 @@
 
 
 #include "GlobalModel.h"
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
 
 GlobalModel::GlobalModel()
  : TEXTURE_DIMENSION(Config::maxSqrtVertices()),
@@ -13,7 +11,6 @@ GlobalModel::GlobalModel()
    dataCount(0),
    conflictCount(0),
    unstableCount(0),
-   texturePtr(nullptr),
    initProgram(loadProgramFromFile("init_unstable.vert")),
    modelProgram(loadProgramFromFile("map.vert", "map.frag")),
    dataProgram(loadProgramGeomFromFile("data.vert", "data.geom")),
@@ -749,20 +746,16 @@ void GlobalModel::setImageSize(int w, int h, float fx, float fy, float cx, float
     imageRenderBuffer.Reinitialise(w, h);
     imageTexture.Reinitialise(w, h, GL_RGB8UI, true, 0, GL_RGB_INTEGER, GL_UNSIGNED_BYTE);
     semanticTexture.Reinitialise(w, h, GL_R8UI, true, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
-    depthTexture.Reinitialise(w, h, GL_R16UI, true, 0, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
+    //depthTexture.Reinitialise(w, h, GL_R16UI, true, 0, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
 
     imageCam << cx, cy, fx, fy;
-
-    assert(texturePtr == nullptr && "Please call endRenderImage() after finish renderImage()!");
-
-    texturePtr = new unsigned char [w * h * 3];
 }
 
-void GlobalModel::renderImage(const Eigen::Matrix4f &view, std::string file)
+void GlobalModel::renderImage(const Eigen::Matrix4f &view)
 {
     pangolin::GlFramebuffer imageFramebuffer;
     imageFramebuffer.AttachColour(imageTexture);
-    //imageFramebuffer.AttachColour(semanticTexture);
+    imageFramebuffer.AttachColour(semanticTexture);
     //imageFramebuffer.AttachColour(depthTexture);
     imageFramebuffer.AttachDepth(imageRenderBuffer);
 
@@ -809,26 +802,6 @@ void GlobalModel::renderImage(const Eigen::Matrix4f &view, std::string file)
     glFinish();
 
     CheckGlDieOnError()
-
-    //---------------------------------------------
-
-
-    imageTexture.Download(texturePtr, GL_RGB_INTEGER, GL_UNSIGNED_BYTE);
-
-    CheckGlDieOnError()
-
-    cv::Mat image(imageRenderBuffer.height, imageRenderBuffer.width, CV_8UC3);
-    memcpy(image.data, texturePtr, imageRenderBuffer.width * imageRenderBuffer.height * 3);
-
-    cv::imwrite(file, image);
-
-    usleep(100000);
-}
-
-void GlobalModel::endRenderImage()
-{
-    delete [] texturePtr;
-    texturePtr = nullptr;
 }
 
 pangolin::GlTexture * GlobalModel::getModelMapVC()
@@ -844,6 +817,16 @@ pangolin::GlTexture * GlobalModel::getModelMapCT()
 pangolin::GlTexture * GlobalModel::getModelMapNR()
 {
     return modelMapNormsRadii.texture;
+}
+
+pangolin::GlTexture * GlobalModel::getImageTex()
+{
+    return &imageTexture;
+}
+
+pangolin::GlTexture * GlobalModel::getSemanticTex()
+{
+    return &semanticTexture;
 }
 
 std::pair<GLuint, GLuint> GlobalModel::getModel()

@@ -34,7 +34,7 @@ Config::Config(float fx, float fy, float cx, float cy, int rows, int cols)
     far_clip = 20.0f;                                         /// the max depth processed
     surfel_fuse_distance_threshold = 0.0;
 
-    max_sqrt_vertices = 5000;
+    max_sqrt_vertices = 3000;
 }
 
 Config & Config::getInstance(float fx, float fy, float cx, float cy, int rows, int cols)
