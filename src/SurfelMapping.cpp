@@ -211,6 +211,8 @@ void SurfelMapping::metriciseDepth()
 
     uniforms.emplace_back("minD", nearClipDepth);
     uniforms.emplace_back("maxD", farClipDepth);
+    uniforms.emplace_back("cols", (float)Config::W());
+    uniforms.emplace_back("stereoBorder", 80.f);
 
     computePacks[ComputePack::METRIC]->compute(textures[GPUTexture::DEPTH_METRIC]->texture,
                                                textures[GPUTexture::DEPTH_RAW]->texture,
@@ -258,9 +260,9 @@ void SurfelMapping::filterDepth()
     uniforms.emplace_back("maxD", 100.f );
     uniforms.emplace_back("sigPix", sigma_intensity2_inv_half);
 
-    computePacks["SMOOTH"]->compute(textures[GPUTexture::DEPTH_METRIC]->texture,
-                                    inputs,
-                                    &uniforms);
+    computePacks[ComputePack::SMOOTH]->compute(textures[GPUTexture::DEPTH_METRIC]->texture,
+                                               inputs,
+                                               &uniforms);
 
     // filter unwanted classes and bad edges
     uniforms.clear();
