@@ -135,6 +135,8 @@ GUI::~GUI()
     delete drawFilteredCloud;
     delete drawGlobalModel;
     delete gpuMem;
+    delete pathMode;
+    delete acquireImage;
 
     delete modelRenderBuffer;
     delete modelFrameBuffer;

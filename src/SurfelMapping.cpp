@@ -196,7 +196,7 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 
         globalModel.buildModelMap();  // build model map each time modelVbo is updated
 
-        CheckGlDieOnError();
+        CheckGlDieOnError()
     }
 
     historyPoses.push_back(currPose);
