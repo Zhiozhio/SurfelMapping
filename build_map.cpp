@@ -18,6 +18,10 @@
 using namespace std;
 
 
+int globalId = 0;
+int lastRestartId = 0;
+
+
 void rungui(SurfelMapping & core, GUI & gui)
 {
     //============ Here is GUI ============//
@@ -151,7 +155,7 @@ void rungui(SurfelMapping & core, GUI & gui)
                     core.acquireImages(data_path, views, Config::W(), Config::H(),
                                                          Config::fx(), Config::fy(),
                                                          Config::cx(), Config::cy(),
-                                                         start_id);
+                                                         lastRestartId);
 
                     printf("|==== %d frames are saved. ====|\n", views.size());
                     usleep(50000);
@@ -239,6 +243,7 @@ void rungui(SurfelMapping & core, GUI & gui)
             //====== Reset
             if(pangolin::Pushed(*gui.reset))
             {
+                lastRestartId = globalId + 1;
                 core.reset();
                 cout << "The whole model has been RESET!" << endl;
             }
@@ -272,6 +277,8 @@ int main(int argc, char ** argv)
     {
         //============ Process Current Frame ============//
         cout << reader.currentFrameId << '\n';
+
+        globalId = reader.currentFrameId;
 
         core.processFrame(reader.rgb, reader.depth, reader.semantic, &reader.gtPose);
 
