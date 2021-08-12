@@ -285,12 +285,15 @@ int main(int argc, char ** argv)
         // show what you want
         rungui(core, gui);
 
-        usleep(50000);
+        usleep(10000);
 
     }
 
     // show after loop
-    rungui(core, gui);
+    while(true)
+    {
+        rungui(core, gui);
+    }
 
 
 }
