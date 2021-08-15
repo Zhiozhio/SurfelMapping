@@ -281,6 +281,7 @@ void SurfelMapping::filterDepth()
     uniforms.emplace_back("rows", (float)Config::H() );
     uniforms.emplace_back("minD", nearClipDepth);
     uniforms.emplace_back("maxD", 100.f );
+    uniforms.emplace_back("stereoBorder", 80.f);
     uniforms.emplace_back("sigPix", sigma_intensity2_inv_half);
 
     computePacks[ComputePack::SMOOTH]->compute(textures[GPUTexture::DEPTH_METRIC]->texture,
@@ -330,6 +331,7 @@ void SurfelMapping::removeMovings()
     uniforms.emplace_back("minD", nearClipDepth);
     uniforms.emplace_back("maxD", 100.f );
     uniforms.emplace_back("t_c2l", T_c2l);
+    uniforms.emplace_back("stereoBorder", 80.f);
     uniforms.emplace_back("moveThresh", 0.5f);
 
     computePacks["MOVINGS"]->compute(textures[GPUTexture::DEPTH_METRIC]->texture,

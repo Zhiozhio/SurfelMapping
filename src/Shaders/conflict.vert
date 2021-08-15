@@ -13,6 +13,7 @@ uniform float cols;
 uniform float rows;
 uniform mat4 t_inv;
 uniform float fuseThresh;
+uniform float stereoBorder;
 
 out int conf_id;
 out vec4 conf_posConf;
@@ -28,7 +29,7 @@ void main()
     float u = cam.z * xl + cam.x;
     float v = cam.w * yl + cam.y;
 
-    if(u < 0 || u > cols || v < 0 || v > rows || vPosHome.z < 0)
+    if(u < stereoBorder || u > cols || v < 0 || v > rows || vPosHome.z < 0)
     {
         conf_id = -10;
         conf_posConf = vec4(0);
@@ -43,6 +44,11 @@ void main()
 
         float depth = float(texture(drSampler, texcoord));
         uint semantic = uint(texture(seSampler, texcoord));
+
+        if(depth == 0.f)
+        {
+            depth = 1000.f;
+        }
 
         if(semantic == 10U)  // 10U is sky
             depth = 0.f;

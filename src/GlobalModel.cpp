@@ -393,6 +393,7 @@ void GlobalModel::processConflict(const Eigen::Matrix4f &pose, const int &time, 
     Eigen::Matrix4f t_inv = pose.inverse();  // T_w^c
     conflictProgram->setUniform(Uniform("t_inv", t_inv));
     conflictProgram->setUniform(Uniform("fuseThresh", Config::surfelFuseDistanceThresh()));
+    conflictProgram->setUniform(Uniform("stereoBorder", 80.f));
 
     glBindBuffer(GL_ARRAY_BUFFER, modelVbo);
     glEnableVertexAttribArray(0);

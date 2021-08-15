@@ -11,6 +11,7 @@ uniform float cols;
 uniform float rows;
 uniform float minD;
 uniform float maxD;
+uniform float stereoBorder;
 uniform float sigPix;
 
 void main()
@@ -30,6 +31,8 @@ void main()
         float xStep = 1.0 / cols;
         float yStep = 1.0 / rows;
 
+        float borderTex = stereoBorder / cols;
+
         // define kernel size
         const int R = 6;
         const int D = R * 2 + 1;
@@ -45,7 +48,7 @@ void main()
                 float texX = ix * xStep + texcoord.x;
                 float texY = iy * yStep + texcoord.y;
 
-                if(texX < 0.0 || texX > 1.0 || texY < 0.0 || texY > 1.0)
+                if(texX < borderTex || texX > 1.0 || texY < 0.0 || texY > 1.0)
                     continue;
 
                 texel = texture(dSampler, vec2(texX, texY));

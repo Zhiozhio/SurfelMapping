@@ -212,6 +212,7 @@ void rungui(SurfelMapping & core, GUI & gui)
             //gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
             gui.normalizeDepth(depth, Config::nearClip(), 50);
             gui.displayImg("depth", gui.depthNormTexture);
+            //gui.displayImg("depth", mask);
 
             gui.processSemantic(semantic);
             gui.displayImg("semantic", gui.semanticTexture);

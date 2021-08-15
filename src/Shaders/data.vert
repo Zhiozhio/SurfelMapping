@@ -135,7 +135,7 @@ void main()
                 float sub_y = texcoord.y - subpix_size_y * (windowSize - 1) / 2 + subpix_size_y * j;
 
                 if(sub_x < 0.0 || sub_x > 1.0 || sub_y < 0.0 || sub_y > 1.0)
-                continue;
+                    continue;
 
                 int currentID = int(textureLod(indexSampler, vec2(sub_x, sub_y), 0.0));
 
