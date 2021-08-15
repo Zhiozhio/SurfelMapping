@@ -22,8 +22,8 @@ void main()
 	uint c = utexel.r;  // class
     
     if( depth <= minD || depth >= maxD || c == 10U || c == 11U || c == 12U    // sky,   person,     rider
-	                                   || c == 13U || c == 14U || c == 15U    // car,   truck,      bus
-	                                   || c == 16U || c == 17U || c == 18U    // train, motorcycle, bicycle
+//	                                   || c == 13U || c == 14U || c == 15U    // car,   truck,      bus
+//	                                   || c == 16U || c == 17U || c == 18U    // train, motorcycle, bicycle
 	  )
     {
         FragColor = 0;

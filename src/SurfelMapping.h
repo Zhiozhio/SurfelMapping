@@ -85,12 +85,16 @@ public:
 
     void reset();
 
+    void texcpy(pangolin::GlTexture * target, pangolin::GlTexture * source);
+
     Checker * checker;
 
 
 private:
     int tick;
     Eigen::Matrix4f currPose;
+    Eigen::Matrix4f lastPose;
+    bool refFrameIsSet;
 
     IndexMap indexMap;
     GlobalModel globalModel;
@@ -112,6 +116,7 @@ private:
     // pre-processing methods
     void filterDepth();
     void metriciseDepth();
+    void removeMovings();
 };
 
 #endif //SURFELMAPPING_SURFELMAPPING_H

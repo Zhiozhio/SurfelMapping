@@ -11,6 +11,8 @@
 SurfelMapping::SurfelMapping()
 : tick(0),
   currPose(Eigen::Matrix4f::Identity()),
+  lastPose(Eigen::Matrix4f::Identity()),
+  refFrameIsSet(false),
   nearClipDepth(Config::nearClip()),
   farClipDepth(Config::farClip()),
   checker(new Checker)
@@ -75,6 +77,11 @@ void SurfelMapping::createTextures()
                                                     GL_RED_INTEGER,
                                                     GL_UNSIGNED_BYTE);
 
+    textures["LAST"] = new GPUTexture(w, h,
+                                      GL_R32F,
+                                      GL_RED,
+                                      GL_FLOAT);
+
 }
 
 void SurfelMapping::createCompute()
@@ -90,6 +97,10 @@ void SurfelMapping::createCompute()
     computePacks[ComputePack::SMOOTH] = new ComputePack(loadProgramFromFile("empty.vert",
                                                                                     "quad.geom",
                                                                                     "depth_smooth.frag"));
+
+    computePacks["MOVINGS"] = new ComputePack(loadProgramFromFile("empty.vert",
+                                                                          "quad.geom",
+                                                                          "depth_movings.frag"));
 }
 
 void SurfelMapping::createFeedbackBuffers()
@@ -114,22 +125,35 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
     if(semantic)
         textures[GPUTexture::SEMANTIC]->texture->Upload(semantic, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
 
+    currPose = *gtPose;
+
 
     TICK("Preprocess");
 
     // convert to metric unit
     metriciseDepth();
 
-    // optimize the edges
+    // optimize the edges & filter the unwanted semantic classes
     filterDepth();
+
+    // filter the moving objects
+    if(!refFrameIsSet)
+    {
+        // copy to LAST
+        texcpy(textures["LAST"]->texture, textures[GPUTexture::DEPTH_FILTERED]->texture);
+
+        lastPose = currPose;
+        refFrameIsSet = true;
+        return;
+    }
+
+    removeMovings();
 
     TOCK("Preprocess");
 
     //First run
     if(tick == 0)
     {
-        currPose = *gtPose;
-
         // compute surfel in current frame
         computeFeedbackBuffers();
 
@@ -139,19 +163,15 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
     }
     else
     {
-        Eigen::Matrix4f lastPose = currPose;
-
         computeFeedbackBuffers();  // todo: move to outside
 
-        currPose = *gtPose;
-
-        unsigned int lastCount = globalModel.getModel().second;
+//        unsigned int lastCount = globalModel.getModel().second;
 //        std::cout << "Last Model Num: " << lastCount << '\n';
 
         TICK("Conflict");
         globalModel.processConflict(currPose,
                                     tick,
-                                    textures[GPUTexture::DEPTH_FILTERED],
+                                    textures[GPUTexture::DEPTH_METRIC],
                                     textures[GPUTexture::SEMANTIC]);
 
 //        std::cout << "Conflict Num: " << globalModel.getConflict().second << '\n';
@@ -172,7 +192,7 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
         globalModel.dataAssociate(currPose,
                                   tick,
                                   textures[GPUTexture::RGB],
-                                  textures[GPUTexture::DEPTH_FILTERED],
+                                  textures[GPUTexture::DEPTH_METRIC],
                                   textures[GPUTexture::SEMANTIC],
                                   indexMap.indexTex(),
                                   indexMap.vertConfTex(),
@@ -198,6 +218,9 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 
         CheckGlDieOnError()
     }
+
+    texcpy(textures["LAST"]->texture, textures[GPUTexture::DEPTH_FILTERED]->texture);
+    lastPose = currPose;
 
     historyPoses.push_back(currPose);
     ++tick;
@@ -234,7 +257,7 @@ void SurfelMapping::filterDepth()
     uniforms.emplace_back("rows", (float)Config::H() );
     uniforms.emplace_back("minD", nearClipDepth);
     uniforms.emplace_back("maxD", 100.f );
-    uniforms.emplace_back("diffThresh", 0.15f);
+    uniforms.emplace_back("diffThresh", 0.15f);  // threshold of support pixel
 
     computePacks[ComputePack::FILTER]->compute(textures[GPUTexture::DEPTH_FILTERED]->texture,
                                                inputs,
@@ -277,7 +300,7 @@ void SurfelMapping::filterDepth()
     uniforms.emplace_back("rows", (float)Config::H() );
     uniforms.emplace_back("minD", nearClipDepth);
     uniforms.emplace_back("maxD", 100.f );
-    uniforms.emplace_back("diffThresh", 0.15f);
+    uniforms.emplace_back("diffThresh", 0.1f);  // threshold of support pixel  todo tune
 
     computePacks[ComputePack::FILTER]->compute(textures[GPUTexture::DEPTH_FILTERED]->texture,
                                                inputs,
@@ -285,11 +308,41 @@ void SurfelMapping::filterDepth()
 
 }
 
+void SurfelMapping::removeMovings()
+{
+    // project current cars .. to last and check depth
+    std::vector<Uniform> uniforms;
+    std::vector<pangolin::GlTexture *> inputs;
+
+    inputs.push_back(textures[GPUTexture::DEPTH_FILTERED]->texture);
+    inputs.push_back(textures[GPUTexture::SEMANTIC]->texture);
+    inputs.push_back(textures["LAST"]->texture);
+
+    Eigen::Vector4f cam(Config::cx(), Config::cy(), Config::fx(), Config::fy());
+    Eigen::Matrix4f T_c2l = lastPose.inverse() * currPose;
+
+    uniforms.emplace_back("dSampler", 0);
+    uniforms.emplace_back("sSampler", 1);
+    uniforms.emplace_back("lSampler", 2);
+    uniforms.emplace_back("cols", (float)Config::W() );
+    uniforms.emplace_back("rows", (float)Config::H() );
+    uniforms.emplace_back("cam", cam);
+    uniforms.emplace_back("minD", nearClipDepth);
+    uniforms.emplace_back("maxD", 100.f );
+    uniforms.emplace_back("t_c2l", T_c2l);
+    uniforms.emplace_back("moveThresh", 0.5f);
+
+    computePacks["MOVINGS"]->compute(textures[GPUTexture::DEPTH_METRIC]->texture,
+                                     inputs,
+                                     &uniforms);
+
+}
+
 void SurfelMapping::computeFeedbackBuffers()
 {
     TICK("feedbackBuffers");
     feedbackBuffers[FeedbackBuffer::RAW]->compute(textures[GPUTexture::RGB]->texture,
-                                                  textures[GPUTexture::DEPTH_FILTERED]->texture,
+                                                  textures[GPUTexture::DEPTH_METRIC]->texture,
                                                   textures[GPUTexture::SEMANTIC]->texture,
                                                   tick,
                                                   farClipDepth);
@@ -356,6 +409,13 @@ void SurfelMapping::reset()
     globalModel.resetBuffer();
     tick = 0;
     historyPoses.clear();
+}
+
+void SurfelMapping::texcpy(pangolin::GlTexture *target, pangolin::GlTexture *source)
+{
+    glCopyImageSubData(source->tid, GL_TEXTURE_2D, 0, 0, 0, 0,
+                       target->tid, GL_TEXTURE_2D, 0, 0, 0, 0,
+                       source->width, source->height, 1);
 }
 
 pangolin::GlTexture * SurfelMapping::getTexture(const std::string &textureType)

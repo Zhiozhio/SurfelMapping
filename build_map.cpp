@@ -34,6 +34,8 @@ void rungui(SurfelMapping & core, GUI & gui)
         pangolin::GlTexture *rgb = core.getTexture(GPUTexture::RGB);
         pangolin::GlTexture *depth = core.getTexture(GPUTexture::DEPTH_METRIC);
         pangolin::GlTexture *semantic = core.getTexture(GPUTexture::SEMANTIC);
+        pangolin::GlTexture *filter = core.getTexture(GPUTexture::DEPTH_FILTERED);
+        pangolin::GlTexture *last = core.getTexture("LAST");
 
         Eigen::Matrix4f pose = core.getCurrPose();
 
@@ -207,7 +209,8 @@ void rungui(SurfelMapping & core, GUI & gui)
             //============ draw raw image data (must be after "cam")
             gui.displayImg("rgb", rgb);
 
-            gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
+            //gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
+            gui.normalizeDepth(depth, Config::nearClip(), 50);
             gui.displayImg("depth", gui.depthNormTexture);
 
             gui.processSemantic(semantic);
