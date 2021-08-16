@@ -13,6 +13,7 @@ SurfelMapping::SurfelMapping()
   currPose(Eigen::Matrix4f::Identity()),
   lastPose(Eigen::Matrix4f::Identity()),
   refFrameIsSet(false),
+  beginCleanPoints(false),
   nearClipDepth(Config::nearClip()),
   farClipDepth(Config::farClip()),
   checker(new Checker)
@@ -172,7 +173,9 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
         globalModel.processConflict(currPose,
                                     tick,
                                     textures[GPUTexture::DEPTH_METRIC],
-                                    textures[GPUTexture::SEMANTIC]);
+                                    textures[GPUTexture::SEMANTIC],
+                                    nearClipDepth,
+                                    farClipDepth);
 
 //        std::cout << "Conflict Num: " << globalModel.getConflict().second << '\n';
 
@@ -454,4 +457,52 @@ GlobalModel & SurfelMapping::getGlobalModel()
 IndexMap & SurfelMapping::getIndexMap()
 {
     return indexMap;
+}
+
+void SurfelMapping::setBeginCleanPoints()
+{
+    beginCleanPoints = true;
+}
+
+bool SurfelMapping::getBeginCleanPoints()
+{
+    return beginCleanPoints;
+}
+
+void SurfelMapping::cleanPoints(const unsigned short *depth, const unsigned char * semantic, const Eigen::Matrix4f *gtPose)
+{
+    textures[GPUTexture::DEPTH_RAW]->texture->Upload(depth, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
+    textures[GPUTexture::SEMANTIC]->texture->Upload(semantic, GL_RED_INTEGER, GL_UNSIGNED_BYTE);
+
+    currPose = *gtPose;
+
+    // convert to metric unit
+    metriciseDepth();
+
+    // optimize the edges & filter the unwanted semantic classes
+    //filterDepth();
+
+    TICK("Clean Points");
+    globalModel.processConflict(*gtPose,
+                                tick,
+                                textures[GPUTexture::DEPTH_METRIC],
+                                textures[GPUTexture::SEMANTIC],
+                                nearClipDepth,
+                                farClipDepth - 15,
+                                0.1f,
+                                1);
+
+    //std::cout << "Conflict Num: " << globalModel.getConflict().second << '\n';
+
+    globalModel.updateConflict();
+
+    globalModel.backMapping();
+
+    //std::cout << "Model Num after conflict: " << globalModel.getModel().second  << '\n';
+
+    globalModel.buildModelMap();
+    TOCK("Clean Points");
+
+    beginCleanPoints = false;
+
 }

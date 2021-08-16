@@ -209,8 +209,8 @@ void rungui(SurfelMapping & core, GUI & gui)
             //============ draw raw image data (must be after "cam")
             gui.displayImg("rgb", rgb);
 
-            //gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
-            gui.normalizeDepth(depth, Config::nearClip(), 50);
+            gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
+            //gui.normalizeDepth(depth, Config::nearClip(), 50);
             gui.displayImg("depth", gui.depthNormTexture);
             //gui.displayImg("depth", mask);
 
@@ -219,6 +219,15 @@ void rungui(SurfelMapping & core, GUI & gui)
 
 
             gui.postCall();
+
+
+
+            //====== clean model
+            if(pangolin::Pushed(*gui.clean))
+            {
+                core.setBeginCleanPoints();
+                return;
+            }
 
 
             //====== Save model
@@ -289,8 +298,28 @@ int main(int argc, char ** argv)
         // show what you want
         rungui(core, gui);
 
+        if(core.getBeginCleanPoints())
+        {
+            break;
+        }
+
         usleep(10000);
 
+    }
+
+    // clean points
+    while (reader.getLast())
+    {
+        cout << reader.currentFrameId << '\n';
+
+        core.cleanPoints(reader.depth, reader.semantic, &reader.gtPose);
+
+        rungui(core, gui);
+
+        if(reader.currentFrameId <= lastRestartId)
+            break;
+
+        usleep(10000);
     }
 
     // show after loop

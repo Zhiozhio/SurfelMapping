@@ -11,9 +11,12 @@ uniform usampler2D seSampler;
 uniform vec4 cam; //cx, cy, fx, fy
 uniform float cols;
 uniform float rows;
+uniform float minDepth;
+uniform float maxDepth;
 uniform mat4 t_inv;
 uniform float fuseThresh;
 uniform float stereoBorder;
+uniform int isClean;
 
 out int conf_id;
 out vec4 conf_posConf;
@@ -29,7 +32,7 @@ void main()
     float u = cam.z * xl + cam.x;
     float v = cam.w * yl + cam.y;
 
-    if(u < stereoBorder || u > cols || v < 0 || v > rows || vPosHome.z < 0)
+    if(u < stereoBorder || u > cols || v < 0 || v > rows || vPosHome.z <= minDepth || vPosHome.z >= maxDepth)
     {
         conf_id = -10;
         conf_posConf = vec4(0);
@@ -45,19 +48,20 @@ void main()
         float depth = float(texture(drSampler, texcoord));
         uint semantic = uint(texture(seSampler, texcoord));
 
-        if(depth == 0.f)
+        if(semantic == 10U)  // 10U is sky
         {
             depth = 1000.f;
         }
 
-        if(semantic == 10U)  // 10U is sky
-            depth = 0.f;
-
+        if(isClean == 0 && depth == 0.f)  // if not in clean mode
+        {
+            depth = 1000.f;
+        }
 
         float x = 0;
         float y = 0;
 
-        if(depth * lambda - vPosHome.z * lambda >= fuseThresh )  // closer than the mewest measurement
+        if(depth * lambda - vPosHome.z * lambda > fuseThresh * vPosHome.z)  // closer than the mewest measurement
         {
             // x, y is NDC coordinate
             x = (u - (cols * 0.5)) / (cols * 0.5);

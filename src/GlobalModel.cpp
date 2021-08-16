@@ -264,7 +264,7 @@ void GlobalModel::dataAssociate(const Eigen::Matrix4f &pose,
     dataProgram->setUniform(Uniform("pose", pose));
     dataProgram->setUniform(Uniform("minDepth", depthMin));
     dataProgram->setUniform(Uniform("maxDepth", depthMax));
-    dataProgram->setUniform(Uniform("fuseThresh", Config::surfelFuseDistanceThresh()));
+    dataProgram->setUniform(Uniform("fuseThresh", Config::surfelFuseDistanceThreshFactor()));
 
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, uvo);
@@ -376,7 +376,14 @@ void GlobalModel::updateFuse()
     CheckGlDieOnError();
 }
 
-void GlobalModel::processConflict(const Eigen::Matrix4f &pose, const int &time, GPUTexture *depthRaw, GPUTexture * semantic)
+void GlobalModel::processConflict(const Eigen::Matrix4f &pose,
+                                  const int &time,
+                                  GPUTexture *depthRaw,
+                                  GPUTexture * semantic,
+                                  float minDepth,
+                                  float maxDepth,
+                                  float fuseThresh,
+                                  int isClean)
 {
     conflictProgram->Bind();
 
@@ -389,11 +396,14 @@ void GlobalModel::processConflict(const Eigen::Matrix4f &pose, const int &time, 
                                                                Config::fy())));
     conflictProgram->setUniform(Uniform("cols", (float)Config::W()));
     conflictProgram->setUniform(Uniform("rows", (float)Config::H()));
+    conflictProgram->setUniform(Uniform("minDepth", minDepth));
+    conflictProgram->setUniform(Uniform("maxDepth", maxDepth));
 
     Eigen::Matrix4f t_inv = pose.inverse();  // T_w^c
     conflictProgram->setUniform(Uniform("t_inv", t_inv));
-    conflictProgram->setUniform(Uniform("fuseThresh", Config::surfelFuseDistanceThresh()));
+    conflictProgram->setUniform(Uniform("fuseThresh", fuseThresh));
     conflictProgram->setUniform(Uniform("stereoBorder", 80.f));
+    conflictProgram->setUniform(Uniform("isClean", isClean));
 
     glBindBuffer(GL_ARRAY_BUFFER, modelVbo);
     glEnableVertexAttribArray(0);
@@ -902,16 +912,16 @@ bool GlobalModel::downloadMap(const std::string &path)
             }
             file.close();
 
-            printf("%s is saved!", path.c_str());
+            printf("%s is saved!\n", path.c_str());
         }
         else
         {
-            printf("%s is not open!", path.c_str());
+            printf("%s is not open!\n", path.c_str());
         }
     }
     catch (std::ofstream::failure &e)
     {
-        std::cerr << path << " saved err!!" << " " << e.what();
+        std::cerr << path << " saved err!!" << " " << e.what() << std::endl;
     }
 
 }

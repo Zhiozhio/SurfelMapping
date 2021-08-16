@@ -62,7 +62,11 @@ public:
     void processConflict(const Eigen::Matrix4f & pose,
                          const int & time,
                          GPUTexture * depthRaw,
-                         GPUTexture * semantic);
+                         GPUTexture * semantic,
+                         float minDepth,
+                         float maxDepth,
+                         float fuseThresh = Config::surfelFuseDistanceThreshFactor(),
+                         int isClean = 0);
 
     void updateConflict();
 

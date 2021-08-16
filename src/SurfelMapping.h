@@ -87,6 +87,12 @@ public:
 
     void texcpy(pangolin::GlTexture * target, pangolin::GlTexture * source);
 
+    void setBeginCleanPoints();
+
+    bool getBeginCleanPoints();
+
+    void cleanPoints(const unsigned short * depth, const unsigned char * semantic, const Eigen::Matrix4f * gtPose);
+
     Checker * checker;
 
 
@@ -107,6 +113,8 @@ private:
     float farClipDepth;
 
     std::vector<Eigen::Matrix4f> historyPoses;
+
+    bool beginCleanPoints;
 
 
     void createTextures();

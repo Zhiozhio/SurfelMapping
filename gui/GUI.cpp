@@ -98,6 +98,7 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         drawRawCloud = new pangolin::Var<int>("ui.Draw raw", 0, 0, 5);
         //drawFilteredCloud = new pangolin::Var<int>("ui.Draw filtered", 0, 0, 4);
         drawGlobalModel = new pangolin::Var<int>("ui.Draw global model", 2, 0, 5);
+        clean = new pangolin::Var<bool>("ui.Clean Pointcloud", false, false);
         save = new pangolin::Var<bool>("ui.Save", false, false);
         reset = new pangolin::Var<bool>("ui.Reset", false, false);
 
@@ -137,6 +138,7 @@ GUI::~GUI()
     delete gpuMem;
     delete pathMode;
     delete acquireImage;
+    delete clean;
 
     delete modelRenderBuffer;
     delete modelFrameBuffer;
