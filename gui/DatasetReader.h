@@ -41,6 +41,10 @@ public:
      */
     virtual bool loadGroundTruth();
 
+    virtual void saveState();
+
+    virtual void resumeState();
+
     int W();
 
     int H();
@@ -61,6 +65,8 @@ public:
     unsigned char * semantic;
     int currentFrameId;
     double time;
+
+    int savedFrameId;
 
 
 protected:

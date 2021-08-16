@@ -15,6 +15,7 @@ DatasetReader::DatasetReader(std::string datasetDir, bool estimateDepth, bool us
   estimate_depth(estimateDepth),
   use_semantic(useSemantic),
   currentFrameId(-1),
+  savedFrameId(-1),
   width_(0),
   height_(0),
   numPixels_(0),
@@ -81,3 +82,13 @@ float DatasetReader::cy()
 
 bool DatasetReader::loadGroundTruth()
 {}
+
+void DatasetReader::saveState()
+{
+    savedFrameId = currentFrameId;
+}
+
+void DatasetReader::resumeState()
+{
+    currentFrameId = savedFrameId;
+}

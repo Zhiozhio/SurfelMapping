@@ -300,26 +300,28 @@ int main(int argc, char ** argv)
 
         if(core.getBeginCleanPoints())
         {
-            break;
+            // clean points
+            reader.saveState();
+
+            while (reader.getLast())
+            {
+                cout << reader.currentFrameId << '\n';
+
+                core.cleanPoints(reader.depth, reader.semantic, &reader.gtPose);  // here we unset the "beginCleanPoints"
+
+                rungui(core, gui);
+
+                if(!core.getBeginCleanPoints())
+                    break;
+
+                usleep(10000);
+            }
+
+            reader.resumeState();
         }
 
         usleep(10000);
 
-    }
-
-    // clean points
-    while (reader.getLast())
-    {
-        cout << reader.currentFrameId << '\n';
-
-        core.cleanPoints(reader.depth, reader.semantic, &reader.gtPose);
-
-        rungui(core, gui);
-
-        if(reader.currentFrameId <= lastRestartId)
-            break;
-
-        usleep(10000);
     }
 
     // show after loop

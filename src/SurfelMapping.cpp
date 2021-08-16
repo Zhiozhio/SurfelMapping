@@ -145,6 +145,10 @@ void SurfelMapping::processFrame(const unsigned char *rgb,
 
         lastPose = currPose;
         refFrameIsSet = true;
+
+        historyPoses.push_back(currPose);
+        ++tick;
+
         return;
     }
 
