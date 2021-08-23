@@ -13,7 +13,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -O0 -std=c++11 -DSHADER_DIR=${S
 set(CMAKE_BUILD_TYPE Debug)
 
 
-set(BUILD_TEST 1)
+set(BUILD_TEST 0)
 
 
 find_package(Pangolin 0.1 REQUIRED)

@@ -50,12 +50,12 @@ void main()
 
         if(semantic == 10U)  // 10U is sky
         {
-            depth = 1000.f;
+            depth = maxDepth + 1.f;
         }
 
         if(isClean == 0 && depth == 0.f)  // if not in clean mode
         {
-            depth = 1000.f;
+            depth = maxDepth + 20.f;
         }
 
         float x = 0;
