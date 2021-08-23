@@ -876,52 +876,114 @@ void GlobalModel::clearBuffer(GLuint buffer, GLfloat value)
     CheckGlDieOnError();
 }
 
-bool GlobalModel::downloadMap(const std::string &path)
+bool GlobalModel::downloadMap(const std::string &path, int startId, int endId)
 {
     glFinish();
 
-    Eigen::Vector4f * vertices = new Eigen::Vector4f[count * 3];
+    float * vertices = new float[count * sizeof(float) * 12];
 
-    memset(&vertices[0], 0, count * Config::vertexSize());
+    memset(vertices, 0, count * sizeof(float) * 12);
 
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, modelVbo);
-    glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, count * Config::vertexSize(), vertices);
+    glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, count * sizeof(float) * 12, vertices);
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 0);
 
     glFinish();
 
     CheckGlDieOnError()
 
-    Eigen::IOFormat CSVFormat(Eigen::FullPrecision, 0, ",", ",");
+    std::ofstream file(path, std::ios::binary);
 
-    std::ofstream file(path);
-
-    //std::cout << vertices[0].format(CSVFormat) << ','
-    //          << vertices[1].format(CSVFormat) << ','
-    //          << vertices[2].format(CSVFormat) << std::endl;
+    unsigned int vert_num = count;
+    int start_id = startId;
+    int end_id = endId;
 
     try
     {
         if(file.is_open())
         {
-            for(int i = 0; i < count; ++i)
-            {
-                file << vertices[3 * i + 0].format(CSVFormat) << ","
-                     << vertices[3 * i + 1].format(CSVFormat) << ","
-                     << vertices[3 * i + 2].format(CSVFormat) << '\n';
-            }
+            file.write((char *)&vert_num, sizeof(unsigned int));
+            file.write((char *)&start_id, sizeof(int));
+            file.write((char *)&end_id, sizeof(int));
+
+            assert(file.tellp() == sizeof(unsigned int) + 2 * sizeof(int));
+            file.write((char *)vertices, count * sizeof(float) * 12);
+
             file.close();
 
-            printf("%s is saved!\n", path.c_str());
+            printf("%s is saved! Saved model count: %d\n", path.c_str(), count);
         }
         else
         {
             printf("%s is not open!\n", path.c_str());
+            return false;
         }
     }
     catch (std::ofstream::failure &e)
     {
         std::cerr << path << " saved err!!" << " " << e.what() << std::endl;
+        return false;
     }
 
+    delete [] vertices;
+
+    return true;
+}
+
+bool GlobalModel::uploadMap(const std::string &model_path, std::vector<int> &start_end_ids)
+{
+    unsigned int vert_num;
+    float * vertices;
+    int start_id;
+    int end_id;
+
+    std::ifstream file(model_path, std::ios::binary);
+
+    try
+    {
+        if(file.is_open())
+        {
+            file.read((char *)&vert_num, sizeof(unsigned int));
+
+            printf("Load model count: %d\n", vert_num);
+
+            file.read((char *)&start_id, sizeof(int));
+            file.read((char *)&end_id, sizeof(int));
+
+            vertices = new float[vert_num * sizeof(float) * 12];
+
+            assert(file.tellg() == sizeof(unsigned int) + 2 * sizeof(int));
+            file.read((char *)vertices, vert_num * sizeof(float) * 12);
+            file.close();
+
+            printf("Read model from %s.\n", model_path.c_str());
+        }
+        else
+        {
+            printf("%s is not open!\n", model_path.c_str());
+            return false;
+        }
+    }
+    catch (std::ifstream::failure &e)
+    {
+        std::cerr << model_path << " read err!!" << " " << e.what() << std::endl;
+        return false;
+    }
+
+    count = vert_num;
+    start_end_ids.clear();
+    start_end_ids.push_back(start_id);
+    start_end_ids.push_back(end_id);
+
+    glBindBuffer(GL_ARRAY_BUFFER, modelVbo);
+    glBufferData(GL_ARRAY_BUFFER, count * sizeof(float) * 12, vertices, GL_DYNAMIC_COPY);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glFinish();
+
+    CheckGlDieOnError()
+
+    delete [] vertices;
+
+    return true;
 }

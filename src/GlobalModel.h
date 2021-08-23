@@ -78,7 +78,9 @@ public:
     pangolin::GlTexture * getImageTex();
     pangolin::GlTexture * getSemanticTex();
 
-    bool downloadMap(const std::string &path);
+    bool downloadMap(const std::string &path, int startId, int endId);
+
+    bool uploadMap(const std::string &model_path, std::vector<int> &start_end_ids);
 
     void resetBuffer();
 

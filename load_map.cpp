@@ -1,5 +1,5 @@
 //
-// Created by zhijun on 2021/7/27.
+// Created by zhijun on 2021/8/23.
 //
 
 #include "KittiReader.h"
@@ -21,21 +21,13 @@ using namespace std;
 int globalId = 0;
 int lastRestartId = 0;
 
-
 void rungui(SurfelMapping & core, GUI & gui)
 {
-    //============ Here is GUI ============//
-    if(gui.getMode() == GUI::ShowMode::minimum)
-        return;
-
-
     if(gui.getMode() == GUI::ShowMode::supervision)
     {
         pangolin::GlTexture *rgb = core.getTexture(GPUTexture::RGB);
         pangolin::GlTexture *depth = core.getTexture(GPUTexture::DEPTH_METRIC);
         pangolin::GlTexture *semantic = core.getTexture(GPUTexture::SEMANTIC);
-        pangolin::GlTexture *filter = core.getTexture(GPUTexture::DEPTH_FILTERED);
-        pangolin::GlTexture *last = core.getTexture("LAST");
 
         Eigen::Matrix4f pose = core.getCurrPose();
 
@@ -146,23 +138,6 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                   3,
                                                   3);
 
-                //=== If acquire images
-                if(pangolin::Pushed(*gui.acquireImage))
-                {
-                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/";  // todo
-
-                    std::vector<Eigen::Matrix4f> views;
-                    int start_id = gui.getViews(views, core.getHistoryPoses());  // todo
-
-                    core.acquireImages(data_path, views, Config::W(), Config::H(),
-                                                         Config::fx(), Config::fy(),
-                                                         Config::cx(), Config::cy(),
-                                                         lastRestartId);
-
-                    printf("|==== %d frames are saved. ====|\n", views.size());
-                    usleep(50000);
-                }
-
 
                 gui.postCall();
 
@@ -172,15 +147,6 @@ void rungui(SurfelMapping & core, GUI & gui)
             float backColor[4] = {0.05, 0.05, 0.3, 0.0f};
             gui.preCall(backColor);
 
-            //============ draw single frame surfel point cloud
-            int cloud_mode = gui.drawRawCloud->Get();
-            if(cloud_mode)
-                core.getFeedbackBuffer(FeedbackBuffer::RAW)->render(gui.s_cam.GetProjectionModelViewMatrix(),
-                                                                    pose,
-                                                                    cloud_mode == 2,
-                                                                    cloud_mode == 3,
-                                                                    cloud_mode == 4,
-                                                                    cloud_mode == 5);
 
             //============ draw global model
             int surfel_mode = gui.drawGlobalModel->Get();
@@ -210,56 +176,13 @@ void rungui(SurfelMapping & core, GUI & gui)
             gui.displayImg("rgb", rgb);
 
             gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
-            //gui.normalizeDepth(depth, Config::nearClip(), 50);
             gui.displayImg("depth", gui.depthNormTexture);
-            //gui.displayImg("depth", mask);
 
             gui.processSemantic(semantic);
             gui.displayImg("semantic", gui.semanticTexture);
 
 
             gui.postCall();
-
-
-
-            //====== clean model
-            if(pangolin::Pushed(*gui.clean))
-            {
-                core.setBeginCleanPoints();
-                return;
-            }
-
-
-            //====== Save model
-            if(pangolin::Pushed(*gui.save))
-            {
-                std::string output_path = "/home/zhijun/myProjects/SurfelMapping/maps";  // todo
-
-                time_t rawtime;
-                struct tm *info;
-
-                time(&rawtime);
-                info = gmtime(&rawtime);
-
-                std::string file_name = "surfel_map_" + to_string(info->tm_year + 1900) + "_"
-                                                      + to_string(info->tm_mon + 1) + "_"
-                                                      + to_string(info->tm_mday) + "_"
-                                                      + to_string(info->tm_hour)
-                                                      + to_string(info->tm_min)
-                                                      + to_string(info->tm_sec) + ".bin";
-
-                output_path += file_name;
-
-                core.getGlobalModel().downloadMap(output_path, lastRestartId, globalId);
-            }
-
-            //====== Reset
-            if(pangolin::Pushed(*gui.reset))
-            {
-                lastRestartId = globalId + 1;
-                core.reset();
-                cout << "The whole model has been RESET!" << endl;
-            }
 
 
             run_gui = gui.pause->Get() && !pangolin::Pushed(*gui.step);
@@ -277,6 +200,8 @@ int main(int argc, char ** argv)
 
     KittiReader reader(kittiDir, false, true, 0, true);
 
+    std::string model_path(argv[2]);
+
     // Initialize the Config in first call with correct arguments
     Config::getInstance(reader.fx(), reader.fy(), reader.cx(), reader.cy(), reader.H(), reader.W());
 
@@ -284,51 +209,23 @@ int main(int argc, char ** argv)
 
     SurfelMapping core;
 
+    vector<int> startEndIds;
+
+    core.getGlobalModel().uploadMap(model_path, startEndIds);
+
+    if(!startEndIds.empty())
+    {
+        lastRestartId = startEndIds[0];
+        globalId = startEndIds[1];
+        printf("Model from frame %d to %d.\n", lastRestartId, globalId);
+    }
+
     CheckGlDieOnError();
 
-    while (reader.getNext())
-    {
-        //============ Process Current Frame ============//
-        cout << reader.currentFrameId << '\n';
-
-        globalId = reader.currentFrameId;
-
-        core.processFrame(reader.rgb, reader.depth, reader.semantic, &reader.gtPose);
-
-        // show what you want
-        rungui(core, gui);
-
-        if(core.getBeginCleanPoints())
-        {
-            // clean points
-            reader.saveState();
-
-            while (reader.getLast())
-            {
-                cout << reader.currentFrameId << '\n';
-
-                core.cleanPoints(reader.depth, reader.semantic, &reader.gtPose);  // here we unset the "beginCleanPoints"
-
-                rungui(core, gui);
-
-                if(!core.getBeginCleanPoints())
-                    break;
-
-                usleep(10000);
-            }
-
-            reader.resumeState();
-        }
-
-        usleep(10000);
-
-    }
-
     // show after loop
-    while(true)
+    while (true)
     {
         rungui(core, gui);
     }
-
 
 }
