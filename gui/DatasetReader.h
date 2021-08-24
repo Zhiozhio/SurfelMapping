@@ -45,6 +45,8 @@ public:
 
     virtual void resumeState();
 
+    virtual void setState(int frameId);
+
     int W();
 
     int H();

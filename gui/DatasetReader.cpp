@@ -92,3 +92,8 @@ void DatasetReader::resumeState()
 {
     currentFrameId = savedFrameId;
 }
+
+void DatasetReader::setState(int frameId)
+{
+    currentFrameId = frameId;
+}

@@ -20,6 +20,7 @@ using namespace std;
 
 int globalId = 0;
 int lastRestartId = 0;
+std::vector<Eigen::Matrix4f> modelPoses;
 
 void rungui(SurfelMapping & core, GUI & gui)
 {
@@ -116,7 +117,7 @@ void rungui(SurfelMapping & core, GUI & gui)
 
                 //=== draw all history frame
                 std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>> posVerts;
-                for(auto & p : core.getHistoryPoses())
+                for(auto & p : modelPoses)
                 {
                     gui.drawFrustum(p);
                     posVerts.emplace_back(p.topRightCorner<3, 1>());
@@ -137,6 +138,23 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                   false,
                                                   3,
                                                   3);
+
+                //=== If acquire images
+                if(pangolin::Pushed(*gui.acquireImage))
+                {
+                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/";  // todo
+
+                    std::vector<Eigen::Matrix4f> views;
+                    int start_id = gui.getViews(views, modelPoses);  // todo
+
+                    core.acquireImages(data_path, views, Config::W(), Config::H(),
+                                       Config::fx(), Config::fy(),
+                                       Config::cx(), Config::cy(),
+                                       lastRestartId);
+
+                    printf("|==== %d frames are saved. ====|\n", views.size());
+                    usleep(10000);
+                }
 
 
                 gui.postCall();
@@ -220,7 +238,16 @@ int main(int argc, char ** argv)
         printf("Model from frame %d to %d.\n", lastRestartId, globalId);
     }
 
-    CheckGlDieOnError();
+    int frame_id = lastRestartId - 1;
+    reader.setState(frame_id);
+    modelPoses.clear();
+    while (reader.getNext())
+    {
+        if(reader.currentFrameId > globalId)
+            break;
+
+        modelPoses.push_back(reader.gtPose);
+    }
 
     // show after loop
     while (true)
