@@ -976,7 +976,7 @@ bool GlobalModel::uploadMap(const std::string &model_path, std::vector<int> &sta
     start_end_ids.push_back(end_id);
 
     glBindBuffer(GL_ARRAY_BUFFER, modelVbo);
-    glBufferData(GL_ARRAY_BUFFER, count * sizeof(float) * 12, vertices, GL_DYNAMIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, count * sizeof(float) * 12, vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glFinish();

@@ -50,15 +50,15 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
     pangolin::Display("cam").SetBounds(0, 1.0f, 0, 1.0f, -640 / 480.0)
             .SetHandler(new pangolin::Handler3D(s_cam));
 
-    pangolin::Display("rgb").SetAspect(rawWidth / rawHeight).SetLock(pangolin::LockLeft, pangolin::LockBottom);
-
-    pangolin::Display("depth").SetAspect(rawWidth / rawHeight).SetLock(pangolin::LockRight, pangolin::LockBottom);
-
 
 
 
     if(mode == ShowMode::supervision)
     {
+        pangolin::Display("rgb").SetAspect(rawWidth / rawHeight).SetLock(pangolin::LockLeft, pangolin::LockBottom);
+
+        pangolin::Display("depth").SetAspect(rawWidth / rawHeight).SetLock(pangolin::LockRight, pangolin::LockBottom);
+
         int multi_height = std::min(rawHeight * 2 * rawWidth / width, height / 4);
         pangolin::CreatePanel("ui").SetBounds(0.0, 1.0, 0.0, pangolin::Attach::Pix(panel));
         pangolin::Display("multi").SetBounds(pangolin::Attach::Pix(0), pangolin::Attach::Pix(multi_height), pangolin::Attach::Pix(panel), 1.0)
@@ -103,7 +103,7 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         reset = new pangolin::Var<bool>("ui.Reset", false, false);
 
         pathMode = new pangolin::Var<bool>("ui.Path Mode", false, true);
-        acquireImage = new pangolin::Var<bool>("ui.Acquire Image", false, false);
+        acquirePairedImage = new pangolin::Var<bool>("ui.Acquire Paired Images", false, false);
 
         //    drawColors = new pangolin::Var<bool>("ui.Draw colors", showcaseMode, true);
         //    drawFxaa = new pangolin::Var<bool>("ui.Draw FXAA", showcaseMode, true);
@@ -114,6 +114,23 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         //    trackInliers = new pangolin::Var<std::string>("ui.Inliers", "0");
     }
 
+
+    if(mode == ShowMode::minimum)
+    {
+        pangolin::CreatePanel("ui").SetBounds(0.0, 1.0, 0.0, pangolin::Attach::Pix(panel));
+
+        // set panel
+        followPose = new pangolin::Var<bool>("ui.Follow pose", true, true);
+
+        drawGlobalModel = new pangolin::Var<int>("ui.Draw global model", 2, 0, 5);
+        clean = new pangolin::Var<bool>("ui.Clean Pointcloud", false, false);
+
+        pathMode = new pangolin::Var<bool>("ui.Path Mode", false, true);
+        acquirePairedImage = new pangolin::Var<bool>("ui.Acquire Paired Images", false, false);
+        novelViewNum = new pangolin::Var<int>("ui.Novel Views Num", 0, 0, 5);
+        generateNovelViews = new pangolin::Var<bool>("ui.Generate Novel Views", false, false);
+        acquireNovelImage = new pangolin::Var<bool>("ui.Acquire Novel Images", false, false);
+    }
 
 
     //        if(showcaseMode)
@@ -137,7 +154,7 @@ GUI::~GUI()
     delete drawGlobalModel;
     delete gpuMem;
     delete pathMode;
-    delete acquireImage;
+    delete acquirePairedImage;
     delete clean;
 
     delete modelRenderBuffer;
@@ -313,7 +330,7 @@ void GUI::drawDebug(pangolin::GlTexture *img)
     glEnable(GL_DEPTH_TEST);
 }
 
-void GUI::drawFrustum(const Eigen::Matrix4f &pose)
+void GUI::drawFrustum(const Eigen::Matrix4f &pose, float * color)
 {
     Eigen::Matrix3f K = Eigen::Matrix3f::Identity();
     K(0, 0) = Config::fx();
@@ -323,7 +340,10 @@ void GUI::drawFrustum(const Eigen::Matrix4f &pose)
 
     Eigen::Matrix3f Kinv = K.inverse();
 
-    glColor3f(1.0f,1.0f,0.0f);
+    if(color == nullptr)
+        glColor3f(1.0f,1.0f,0.0f);
+    else
+        glColor3f(color[0], color[1], color[2]);
 
     pangolin::glDrawFrustum(Kinv,
                             Config::W(),

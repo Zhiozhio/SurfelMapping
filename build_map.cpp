@@ -147,7 +147,7 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                   3);
 
                 //=== If acquire images
-                if(pangolin::Pushed(*gui.acquireImage))
+                if(pangolin::Pushed(*gui.acquirePairedImage))
                 {
                     std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/";  // todo
 
@@ -233,7 +233,7 @@ void rungui(SurfelMapping & core, GUI & gui)
             //====== Save model
             if(pangolin::Pushed(*gui.save))
             {
-                std::string output_path = "/home/zhijun/myProjects/SurfelMapping/maps";  // todo
+                std::string output_path = "/home/zhijun/myProjects/SurfelMapping/maps/";  // todo
 
                 time_t rawtime;
                 struct tm *info;

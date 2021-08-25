@@ -38,7 +38,7 @@ public:
     void drawCapacity(pangolin::GlTexture * img);
 
 
-    void drawFrustum(const Eigen::Matrix4f & pose);
+    void drawFrustum(const Eigen::Matrix4f & pose, float * color = nullptr);
 
 
     void displayImg(const std::string & id, pangolin::GlTexture * img);
@@ -93,7 +93,9 @@ public:
                         * reset,
                         * followPose,
                         * pathMode,
-                        * acquireImage,
+                        * acquirePairedImage,
+                        * generateNovelViews,
+                        * acquireNovelImage,
                         * clean;
 
     pangolin::Var<int> * gpuMem,
@@ -101,7 +103,8 @@ public:
                        * drawRawCloud,
                        * drawFilteredCloud,
                        // define draw mode: 0 - none, 1 - point, 2 - mono, 3 - normal, 4 - color, 5 - semantic
-                       * drawGlobalModel;
+                       * drawGlobalModel,
+                       * novelViewNum;
 
     pangolin::Var<std::string> * totalPoints,
                                * trackInliers;

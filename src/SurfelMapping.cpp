@@ -2,6 +2,7 @@
 // Created by zhijun on 2021/5/24.
 //
 
+#include "system.h"
 #include "SurfelMapping.h"
 #include <iomanip>
 #include <sys/stat.h>
@@ -367,8 +368,8 @@ void SurfelMapping::acquireImages(std::string path, const std::vector<Eigen::Mat
     if(path.back() != '/')  path += "/";
     std::string image_path = path + "image/";
     std::string semantic_path = path + "semantic/";
-    mkdir(image_path.c_str(), 0755);
-    mkdir(semantic_path.c_str(), 0755);
+    _mkdir(image_path.c_str());
+    _mkdir(semantic_path.c_str());
 
     globalModel.setImageSize(w, h, fx, fy, cx, cy);
 
@@ -391,7 +392,7 @@ void SurfelMapping::acquireImages(std::string path, const std::vector<Eigen::Mat
         cv::Mat image(h, w, CV_8UC3);
         memcpy(image.data, texturePtr, w * h * 3);
 
-        cv::imwrite(image_path + file_name, image);
+        bool res1 = cv::imwrite(image_path + file_name, image);
 
         //---------------------------------------------
 
@@ -402,9 +403,12 @@ void SurfelMapping::acquireImages(std::string path, const std::vector<Eigen::Mat
         cv::Mat semantic(h, w, CV_8UC1);
         memcpy(semantic.data, semanticPtr, w * h);
 
-        cv::imwrite(semantic_path + file_name, semantic);
+        bool res2 = cv::imwrite(semantic_path + file_name, semantic);
 
-        usleep(100000);
+        if(!(res1 && res2))
+            printf("%s is NOT saved!\n", file_name.c_str());
+
+        //usleep(1000);
 
         startId++;
     }

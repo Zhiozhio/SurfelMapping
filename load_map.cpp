@@ -12,7 +12,7 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <vector>
-#include <set>
+#include <random>
 #include <ctime>
 
 using namespace std;
@@ -21,16 +21,13 @@ using namespace std;
 int globalId = 0;
 int lastRestartId = 0;
 std::vector<Eigen::Matrix4f> modelPoses;
+std::vector<Eigen::Matrix4f> novelViews;
 
 void rungui(SurfelMapping & core, GUI & gui)
 {
-    if(gui.getMode() == GUI::ShowMode::supervision)
+    if(gui.getMode() == GUI::ShowMode::minimum)
     {
-        pangolin::GlTexture *rgb = core.getTexture(GPUTexture::RGB);
-        pangolin::GlTexture *depth = core.getTexture(GPUTexture::DEPTH_METRIC);
-        pangolin::GlTexture *semantic = core.getTexture(GPUTexture::SEMANTIC);
-
-        Eigen::Matrix4f pose = core.getCurrPose();
+        Eigen::Matrix4f pose = modelPoses[0];
 
 
         bool run_gui = true;
@@ -70,6 +67,7 @@ void rungui(SurfelMapping & core, GUI & gui)
 
             //====== Enter Path Mode until Complete
             bool initView = true;
+            int totalNovelViewNum = 0;
             while(gui.pathMode->Get())
             {
                 float backColor[4] = {0, 0, 0, 0};
@@ -116,7 +114,7 @@ void rungui(SurfelMapping & core, GUI & gui)
 
 
                 //=== draw all history frame
-                std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>> posVerts;
+                std::vector<Eigen::Vector3f> posVerts, posVertNovel;
                 for(auto & p : modelPoses)
                 {
                     gui.drawFrustum(p);
@@ -125,6 +123,14 @@ void rungui(SurfelMapping & core, GUI & gui)
                 glColor3f(1.0f,1.0f,0.0f);
                 pangolin::glDrawVertices(posVerts, GL_LINE_STRIP);
                 glColor3f(1.0f,1.0f,1.0f);
+
+                //=== draw all novel frame (if exist)
+                float frameColor[3] = {1.f, 0.f, 0.0f};
+                for(auto & p : novelViews)
+                {
+                    gui.drawFrustum(p, frameColor);
+                    //posVertNovel.emplace_back(p.topRightCorner<3, 1>());
+                }
 
                 //=== draw model
                 core.getGlobalModel().renderModel(gui.s_cam.GetProjectionModelViewMatrix(),
@@ -140,19 +146,79 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                   3);
 
                 //=== If acquire images
-                if(pangolin::Pushed(*gui.acquireImage))
+                if(pangolin::Pushed(*gui.acquirePairedImage))
                 {
-                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/";  // todo
+                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/paired";  // todo
 
                     std::vector<Eigen::Matrix4f> views;
-                    int start_id = gui.getViews(views, modelPoses);  // todo
+                    gui.getViews(views, modelPoses);  // todo
 
-                    core.acquireImages(data_path, views, Config::W(), Config::H(),
+                    core.acquireImages(data_path, views,
+                                       Config::W(), Config::H(),
                                        Config::fx(), Config::fy(),
                                        Config::cx(), Config::cy(),
                                        lastRestartId);
 
-                    printf("|==== %d frames are saved. ====|\n", views.size());
+                    printf("|==== Paired images from frame %d to %d are saved. ====|\n", lastRestartId, globalId);
+                    usleep(10000);
+                }
+
+                //=== generate novel views
+                if(pangolin::Pushed(*gui.generateNovelViews))
+                {
+                    // get novel view number
+                    int novelViewNum = gui.novelViewNum->Get();
+
+                    novelViews.clear();
+
+                    std::vector<Eigen::Matrix4f> views;
+                    gui.getViews(views, modelPoses);  // todo
+
+                    // random frame generator
+                    std::default_random_engine g;
+                    g.seed(time(0));
+                    std::uniform_int_distribution<int> uniFrame(0, views.size());
+                    // random translation generator
+                    std::uniform_real_distribution<float> uniTransX(-2, 2);
+                    std::uniform_real_distribution<float> uniTransZ(-1, 1);
+                    // random angle generator
+                    std::uniform_real_distribution<float> uniAngle(-15, 15);
+                    for(int i = 0; i < 100 * novelViewNum; ++i)
+                    {
+                        // choose a random view
+                        int frame_num = uniFrame(g);
+                        auto v = views[frame_num];
+
+                        float x_off = uniTransX(g);
+                        float z_off = uniTransZ(g);
+                        float theta_off = uniAngle(g) * M_PI / 180;
+
+                        auto rotation = Eigen::AngleAxis<float>(theta_off, Eigen::Vector3f(0, -1, 0));
+                        auto translation = Eigen::Translation3f(x_off, 0, z_off);
+
+                        Eigen::Transform<float, 3, Eigen::Affine> T;
+                        T = translation * rotation;
+
+                        v = v * T.matrix();
+
+                        novelViews.push_back(v);
+                    }
+                }
+
+                if(pangolin::Pushed(*gui.acquireNovelImage))
+                {
+                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/novel";  // todo
+
+                    core.acquireImages(data_path, novelViews,
+                                       Config::W(), Config::H(),
+                                       Config::fx(), Config::fy(),
+                                       Config::cx(), Config::cy(),
+                                       totalNovelViewNum);
+
+                    printf("|==== Novel images from frame %d to %d are saved. ====|\n", totalNovelViewNum, totalNovelViewNum + novelViews.size() - 1);
+
+                    totalNovelViewNum += novelViews.size();
+
                     usleep(10000);
                 }
 
@@ -162,9 +228,10 @@ void rungui(SurfelMapping & core, GUI & gui)
                 initView = false;
             }
 
+
+
             float backColor[4] = {0.05, 0.05, 0.3, 0.0f};
             gui.preCall(backColor);
-
 
             //============ draw global model
             int surfel_mode = gui.drawGlobalModel->Get();
@@ -183,27 +250,13 @@ void rungui(SurfelMapping & core, GUI & gui)
                                                   3);
 
 
-
-            gui.drawCapacity(core.getGlobalModel().getModelMapNR());
-
             gui.drawFrustum(core.getCurrPose());
-
-
-
-            //============ draw raw image data (must be after "cam")
-            gui.displayImg("rgb", rgb);
-
-            gui.normalizeDepth(depth, Config::nearClip(), Config::farClip());
-            gui.displayImg("depth", gui.depthNormTexture);
-
-            gui.processSemantic(semantic);
-            gui.displayImg("semantic", gui.semanticTexture);
 
 
             gui.postCall();
 
 
-            run_gui = gui.pause->Get() && !pangolin::Pushed(*gui.step);
+
         }
 
 
@@ -223,7 +276,7 @@ int main(int argc, char ** argv)
     // Initialize the Config in first call with correct arguments
     Config::getInstance(reader.fx(), reader.fy(), reader.cx(), reader.cy(), reader.H(), reader.W());
 
-    GUI gui(reader.W(), reader.H(), GUI::ShowMode::supervision);
+    GUI gui(reader.W(), reader.H(), GUI::ShowMode::minimum);
 
     SurfelMapping core;
 
