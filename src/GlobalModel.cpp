@@ -21,7 +21,7 @@ GlobalModel::GlobalModel()
    unstableProgram(loadProgramGeomFromFile("unstable.vert", "unstable.geom")),
    drawPointProgram(loadProgramFromFile("draw_feedback.vert", "draw_feedback.frag")),
    drawSurfelProgram(loadProgramFromFile("draw_surface.vert", "draw_surface_adaptive.geom", "draw_surface.frag")),
-   drawImageProgram(loadProgramFromFile("draw_image.vert", "draw_image.geom", "draw_image.frag")),
+   drawImageProgram(loadProgramFromFile("draw_image.vert", "draw_image_adaptive.geom", "draw_image.frag")),
    //drawImageProgram(loadProgramFromFile("empty.vert", "quad.geom", "draw_image.frag")),
    modelMapRenderBuffer(TEXTURE_DIMENSION, TEXTURE_DIMENSION),
    vertConfRenderBuffer(TEXTURE_DIMENSION, TEXTURE_DIMENSION),

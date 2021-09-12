@@ -169,7 +169,8 @@ void rungui(SurfelMapping & core, GUI & gui)
                 initView = false;
             }
 
-            float backColor[4] = {0.05, 0.05, 0.3, 0.0f};
+            //float backColor[4] = {0.05, 0.05, 0.3, 0.0f};
+            float backColor[4] = {0.f, 0.f, 0.f, 0.0f};
             gui.preCall(backColor);
 
             //============ draw single frame surfel point cloud
@@ -285,6 +286,10 @@ int main(int argc, char ** argv)
     SurfelMapping core;
 
     CheckGlDieOnError();
+
+    // if you want to start from middle, set this.
+    lastRestartId = 3282;
+    reader.setState(lastRestartId);
 
     while (reader.getNext())
     {

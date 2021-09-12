@@ -73,44 +73,44 @@ void rungui(SurfelMapping & core, GUI & gui)
                 float backColor[4] = {0, 0, 0, 0};
                 gui.preCall(backColor);
 
-                //=== overlook tansform
-                pangolin::OpenGlMatrix mv;
-
-                Eigen::Matrix3f currRot;
-                currRot = Eigen::AngleAxis<float>(-M_PI_2, Eigen::Vector3f(1, 0, 0));
-
-                Eigen::Vector3f forwardVector(0, 0, 1);
-                Eigen::Vector3f upVector(0, -1, 0);
-
-                Eigen::Vector3f forward = (currRot * forwardVector).normalized();
-                Eigen::Vector3f up = (currRot * upVector).normalized();
-
-                Eigen::Vector3f viewAt;
-                if(initView)
-                {
-                    viewAt = Eigen::Vector3f(pose(0, 3), -15, pose(2, 3));
-                }
-                else
-                {
-                    pangolin::OpenGlMatrix currMVInv = gui.s_cam.GetModelViewMatrix().Inverse();
-                    viewAt = Eigen::Vector3f(currMVInv(0, 3), currMVInv(1, 3), currMVInv(2, 3));
-                }
-
-                Eigen::Vector3f eye = viewAt;
-
-                Eigen::Vector3f z = -forward;  // Forward, OpenGL camera z direction
-                Eigen::Vector3f x = up.cross(z).normalized();     // Right
-                Eigen::Vector3f y = z.cross(x);                   // Up
-
-                Eigen::Matrix4d m;                                // [R; U; F]_4x4 * [E; -eye]_4x4
-                m << x(0),  x(1),  x(2),  -(x.dot(eye)),
-                        y(0),  y(1),  y(2),  -(y.dot(eye)),
-                        z(0),  z(1),  z(2),  -(z.dot(eye)),
-                        0,     0,     0,      1;
-
-                memcpy(&mv.m[0], m.data(), sizeof(Eigen::Matrix4d));
-
-                gui.s_cam.SetModelViewMatrix(mv);
+//                //=== overlook tansform
+//                pangolin::OpenGlMatrix mv;
+//
+//                Eigen::Matrix3f currRot;
+//                currRot = Eigen::AngleAxis<float>(-M_PI_2, Eigen::Vector3f(1, 0, 0));
+//
+//                Eigen::Vector3f forwardVector(0, 0, 1);
+//                Eigen::Vector3f upVector(0, -1, 0);
+//
+//                Eigen::Vector3f forward = (currRot * forwardVector).normalized();
+//                Eigen::Vector3f up = (currRot * upVector).normalized();
+//
+//                Eigen::Vector3f viewAt;
+//                if(initView)
+//                {
+//                    viewAt = Eigen::Vector3f(pose(0, 3), -15, pose(2, 3));
+//                }
+//                else
+//                {
+//                    pangolin::OpenGlMatrix currMVInv = gui.s_cam.GetModelViewMatrix().Inverse();
+//                    viewAt = Eigen::Vector3f(currMVInv(0, 3), currMVInv(1, 3), currMVInv(2, 3));
+//                }
+//
+//                Eigen::Vector3f eye = viewAt;
+//
+//                Eigen::Vector3f z = -forward;  // Forward, OpenGL camera z direction
+//                Eigen::Vector3f x = up.cross(z).normalized();     // Right
+//                Eigen::Vector3f y = z.cross(x);                   // Up
+//
+//                Eigen::Matrix4d m;                                // [R; U; F]_4x4 * [E; -eye]_4x4
+//                m << x(0),  x(1),  x(2),  -(x.dot(eye)),
+//                        y(0),  y(1),  y(2),  -(y.dot(eye)),
+//                        z(0),  z(1),  z(2),  -(z.dot(eye)),
+//                        0,     0,     0,      1;
+//
+//                memcpy(&mv.m[0], m.data(), sizeof(Eigen::Matrix4d));
+//
+//                gui.s_cam.SetModelViewMatrix(mv);
 
 
                 //=== draw all history frame

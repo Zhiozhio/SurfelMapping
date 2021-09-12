@@ -87,8 +87,8 @@ void main()
     if(checkNeighbours(texcoord.xy, drSampler) && value > minDepth && value < maxDepth
 //                                               && (int(x) + int(y)) % 2 == 1           // 1/2 sparse
 //                                               && int(x) % 2 == 0 && int(y) % 2 == 0   // 1/4 sparse
-//                                               && int(x) % 3 == 0 && int(y) % 3 == 0   // 1/9 sparse
-                                               && int(x) % 4 == 0 && int(y) % 4 == 0   // 1/16 sparse
+                                               && int(x) % 3 == 0 && int(y) % 3 == 0   // 1/9 sparse
+//                                               && int(x) % 4 == 0 && int(y) % 4 == 0   // 1/16 sparse
     )
     {
         //============ Calculate new surfels locally ============//
