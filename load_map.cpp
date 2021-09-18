@@ -20,21 +20,28 @@ using namespace std;
 
 int globalId = 0;
 int lastRestartId = 0;
+
 std::vector<Eigen::Matrix4f> modelPoses;
 std::vector<Eigen::Matrix4f> novelViews;
+
 bool S_shaped_novel = false;
+
+// overview
+int overviewId = 0;
 
 void rungui(SurfelMapping & core, GUI & gui)
 {
     if(gui.getMode() == GUI::ShowMode::minimum)
     {
-        Eigen::Matrix4f pose = modelPoses[0];
-
 
         bool run_gui = true;
         while(run_gui)
         {
-            if(gui.followPose->Get())
+            Eigen::Matrix4f pose = modelPoses[overviewId];
+
+            bool follow_pose = gui.followPose->Get();
+
+            if(follow_pose)
             {
                 pangolin::OpenGlMatrix mv;
 
@@ -77,14 +84,14 @@ void rungui(SurfelMapping & core, GUI & gui)
             {
 
                 //=== draw all history frame
-                std::vector<Eigen::Vector3f> posVerts, posVertNovel;
+                std::vector<Eigen::Vector3f> positionVerts, positionVertNovel;
                 for(auto & p : modelPoses)
                 {
                     gui.drawFrustum(p);
-                    posVerts.emplace_back(p.topRightCorner<3, 1>());
+                    positionVerts.emplace_back(p.topRightCorner<3, 1>());
                 }
                 glColor3f(1.0f,1.0f,0.0f);
-                pangolin::glDrawVertices(posVerts, GL_LINE_STRIP);
+                pangolin::glDrawVertices(positionVerts, GL_LINE_STRIP);
                 glColor3f(1.0f,1.0f,1.0f);
 
                 //=== draw all novel frame (if exist)
@@ -92,13 +99,13 @@ void rungui(SurfelMapping & core, GUI & gui)
                 for(auto & p : novelViews)
                 {
                     gui.drawFrustum(p, frameColor);
-                    posVertNovel.emplace_back(p.topRightCorner<3, 1>());
+                    positionVertNovel.emplace_back(p.topRightCorner<3, 1>());
                 }
                 if(S_shaped_novel)
                 {
 
                     glColor3f(1.0f,0.0f,0.0f);
-                    pangolin::glDrawVertices(posVertNovel, GL_LINE_STRIP);
+                    pangolin::glDrawVertices(positionVertNovel, GL_LINE_STRIP);
                     glColor3f(1.0f,1.0f,1.0f);
                 }
 
@@ -243,6 +250,41 @@ void rungui(SurfelMapping & core, GUI & gui)
             }
 
 
+            //============ overview
+            if(!follow_pose && gui.overview->Get())
+            {
+                pangolin::OpenGlMatrix mv;
+
+                Eigen::Matrix3f currRot = pose.topLeftCorner(3, 3);
+
+                Eigen::Vector3f forwardVector(0, 0, 1);
+                Eigen::Vector3f upVector(0, -1, 0);
+
+                Eigen::Vector3f forward = (currRot * forwardVector).normalized();
+                Eigen::Vector3f up = (currRot * upVector).normalized();
+
+                Eigen::Vector3f viewAt(pose(0, 3), pose(1, 3) - 5, pose(2, 3));
+
+                Eigen::Vector3f eye = viewAt - forward;
+
+                Eigen::Vector3f z = (eye - viewAt).normalized();  // Forward, OpenGL camera z direction
+                Eigen::Vector3f x = up.cross(z).normalized();     // Right
+                Eigen::Vector3f y = z.cross(x);                   // Up
+
+                Eigen::Matrix4d m;                                // [R; U; F]_4x4 * [E; -eye]_4x4
+                m << x(0),  x(1),  x(2),  -(x.dot(eye)),
+                        y(0),  y(1),  y(2),  -(y.dot(eye)),
+                        z(0),  z(1),  z(2),  -(z.dot(eye)),
+                        0,     0,     0,      1;
+
+                memcpy(&mv.m[0], m.data(), sizeof(Eigen::Matrix4d));
+
+                gui.s_cam.SetModelViewMatrix(mv);
+
+                overviewId = ++overviewId % modelPoses.size();
+
+                usleep(100000);
+            }
 
 
 

@@ -131,7 +131,7 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         generateNovelViews = new pangolin::Var<bool>("ui.Generate Novel Views", false, false);
         generate_S_views = new pangolin::Var<bool>("ui.generate \"S\"-shaped path", false, false);
         acquireNovelImage = new pangolin::Var<bool>("ui.Acquire Novel Images", false, false);
-        overview = new pangolin::Var<bool>("ui.Overview", false, false);
+        overview = new pangolin::Var<bool>("ui.Overview", false, true);
     }
 
 
