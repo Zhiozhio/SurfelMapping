@@ -21,7 +21,7 @@ class GUI
 {
 public:
 
-    enum ShowMode {minimum=0, supervision, showcase};
+    enum ShowMode {minimum=0, supervision};
 
     GUI(int rawWidth, int rawHeight, ShowMode mode=ShowMode::supervision);
 
@@ -95,8 +95,10 @@ public:
                         * pathMode,
                         * acquirePairedImage,
                         * generateNovelViews,
+                        * generate_S_views,
                         * acquireNovelImage,
-                        * clean;
+                        * clean,
+                        * overview;
 
     pangolin::Var<int> * gpuMem,
                        // define draw mode: 0 - none, 1 - mono, 2 - normal, 3 - color, 4 - semantic, 5 - surfel

@@ -129,7 +129,9 @@ GUI::GUI(int rawWidth, int rawHeight, ShowMode mode)
         acquirePairedImage = new pangolin::Var<bool>("ui.Acquire Paired Images", false, false);
         novelViewNum = new pangolin::Var<int>("ui.Novel Views Num", 0, 0, 5);
         generateNovelViews = new pangolin::Var<bool>("ui.Generate Novel Views", false, false);
+        generate_S_views = new pangolin::Var<bool>("ui.generate \"S\"-shaped path", false, false);
         acquireNovelImage = new pangolin::Var<bool>("ui.Acquire Novel Images", false, false);
+        overview = new pangolin::Var<bool>("ui.Overview", false, false);
     }
 
 
