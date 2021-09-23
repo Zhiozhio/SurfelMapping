@@ -113,7 +113,7 @@ void rungui(SurfelMapping & core, GUI & gui)
                 //=== If acquire images
                 if(pangolin::Pushed(*gui.acquirePairedImage))
                 {
-                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/paired";  // todo
+                    std::string data_path = "../output/paired";  // todo
 
                     std::vector<Eigen::Matrix4f> views;
                     gui.getViews(views, modelPoses);  // todo
@@ -217,7 +217,7 @@ void rungui(SurfelMapping & core, GUI & gui)
                 //=== If acquire novel images
                 if(pangolin::Pushed(*gui.acquireNovelImage))
                 {
-                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/novel";  // todo
+                    std::string data_path = "../output/novel";  // todo
 
                     if(S_shaped_novel)
                     {

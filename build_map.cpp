@@ -149,7 +149,7 @@ void rungui(SurfelMapping & core, GUI & gui)
                 //=== If acquire images
                 if(pangolin::Pushed(*gui.acquirePairedImage))
                 {
-                    std::string data_path = "/home/zhijun/myProjects/SurfelMapping/output/";  // todo
+                    std::string data_path = "../output/";  // todo
 
                     std::vector<Eigen::Matrix4f> views;
                     int start_id = gui.getViews(views, core.getHistoryPoses());  // todo
@@ -234,7 +234,7 @@ void rungui(SurfelMapping & core, GUI & gui)
             //====== Save model
             if(pangolin::Pushed(*gui.save))
             {
-                std::string output_path = "/home/zhijun/myProjects/SurfelMapping/maps/";  // todo
+                std::string output_path = "../maps/";  // todo
 
                 time_t rawtime;
                 struct tm *info;
@@ -288,7 +288,7 @@ int main(int argc, char ** argv)
     CheckGlDieOnError();
 
     // if you want to start from middle, set this.
-    lastRestartId = 3282;
+    //lastRestartId = 3282;
     reader.setState(lastRestartId);
 
     while (reader.getNext())
