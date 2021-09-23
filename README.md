@@ -23,3 +23,4 @@ make
 ```
 
 ## 3. Usage
+We use some third part learning methods prediction to acquire dense depth map and semantic labels.
