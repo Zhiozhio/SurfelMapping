@@ -23,4 +23,4 @@ make
 ```
 
 ## 3. Usage
-We use some third part learning methods prediction to acquire dense depth map and semantic labels.
+The program requires RGB images and corresponding DEPTH and SEMANTIC maps as input. We use some third part learning methods prediction to provide dense depth map and semantic labels. You can download demo data from [here](https://drive.google.com/file/d/1VpIspJlR6erI3WYbwHAe1Gqn8hCgZgjE/view?usp=sharing) (using [PSMNet](https://github.com/JiaRenChang/PSMNet) for depth and [PointRend](https://github.com/facebookresearch/detectron2/tree/main/projects/PointRend) for semantic). You can use your own data including RGB, depth and semantic. The RGB, depth and semantic subdirectories should be in a same super directory and set the subdir name in the KittiReader. See KittiReader.cpp for details of input path. If you use the demo data, you do not need to change it.
