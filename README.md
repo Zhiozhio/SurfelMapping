@@ -35,6 +35,6 @@ In the GUI window, uncheck "pause" button and run the mapping. click "save" for 
 To load saved map and generate new data, run
 ```
 cd build
-/load_map [path to the data super dir] [saved map path]
+./load_map [path to the data super dir] [saved map path]
 ```
 click "path mode" then generate new data.
