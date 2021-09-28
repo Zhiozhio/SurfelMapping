@@ -42,4 +42,4 @@ cd build
 Click "path mode" and generate novel views as shown and instructed in _loadmap.gif_. Then click "Acquire Novel Images" to get new images of those views.
 
 ## 4. SPADE
-The work in _SPADE_ dir is forked from https://github.com/NVlabs/SPADE. We modified the input and some other parts. a _postprocess.py_ is also added for synthesize the GAN generated image and rendered image. Please go to original [SPADE](https://github.com/NVlabs/SPADE) to see the training and testing of the code.
+The work in _SPADE_ dir is forked from https://github.com/NVlabs/SPADE. We modified the input and some other parts. a _postprocess.py_ is also added for synthesizing final images from the GAN generated image and rendered image. Please go to original [SPADE](https://github.com/NVlabs/SPADE) to see the training and testing of the code.
