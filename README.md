@@ -5,6 +5,8 @@ This repo is part of the code of our LADS: Lightweight Autonomous Driving Simula
 
 The code is inspired by https://www.imperial.ac.uk/dyson-robotics-lab/downloads/elastic-fusion/
 
+![image](https://github.com/Zhiozhio/SurfelMapping/blob/master/loadmap.gif)
+
 ## 1. Dependencies
 1. Ubuntu 18.04. We only tested on 18.04 but should be compatible to other adjacent distributions.
 2. CMake
@@ -37,7 +39,7 @@ To load saved map and generate new data, run
 cd build
 ./load_map [path to the data super dir] [saved map path]
 ```
-click "path mode" then generate new data.
+Click "path mode" and generate novel views as shown and instructed in _loadmap.gif_. Then click "Acquire Novel Images" to get new images of those views.
 
 ## 4. SPADE
 The work in _SPADE_ dir is forked from https://github.com/NVlabs/SPADE. We modified the input and some other parts. a _postprocess.py_ is also added for synthesize the GAN generated image and rendered image. Please go to original [SPADE](https://github.com/NVlabs/SPADE) to see the training and testing of the code.
