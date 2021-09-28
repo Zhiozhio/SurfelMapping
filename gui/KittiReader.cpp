@@ -24,7 +24,9 @@ KittiReader::KittiReader(std::string datasetDir, bool estimateDepth, bool useSem
     while(timesIn >> time_tmp)
         times.push_back(time_tmp);
 
+    // depth path
     depthDir = datasetDir_ + "/PSMNet";
+    // RGB path
     rgbDir = datasetDir_ + "/image_2";
 
     bool tmp = loadCalibration();
@@ -38,6 +40,7 @@ KittiReader::KittiReader(std::string datasetDir, bool estimateDepth, bool useSem
 
     if(useSemantic)
     {
+        // semantic path
         semanticDir = datasetDir_ + "/semantics";
     }
 }
@@ -93,7 +96,10 @@ bool KittiReader::getCore(const std::string &depth_file, const std::string &rgb_
     // rgb images
     cv::Mat rgb_mat = cv::imread(rgb_file, cv::IMREAD_COLOR);
     if(rgb_mat.data == nullptr)
+    {
+        printf("CANNOT read RGB image from %s", rgb_file.c_str());
         return false;
+    }
 
     assert(height_origin == rgb_mat.rows && width_origin == rgb_mat.cols && "RGB sizes do not match!");
 
@@ -132,7 +138,10 @@ bool KittiReader::getCore(const std::string &depth_file, const std::string &rgb_
     {
         cv::Mat dep_mat = cv::imread(depth_file, cv::IMREAD_ANYDEPTH);
         if(dep_mat.data == nullptr)
+        {
+            printf("CANNOT read depth image from %s", depth_file.c_str());
             return false;
+        }
 
         assert(height_origin == dep_mat.rows && width_origin == dep_mat.cols && "depth sizes do not match!");
 
@@ -164,7 +173,10 @@ bool KittiReader::getCore(const std::string &depth_file, const std::string &rgb_
     {
         cv::Mat sem_mat = cv::imread(semantic_file, cv::IMREAD_ANYDEPTH);
         if(sem_mat.data == nullptr)
+        {
+            printf("CANNOT read semantic image from %s", semantic_file.c_str());
             return false;
+        }
 
         assert(height_origin == sem_mat.rows && width_origin == sem_mat.cols && "semantic sizes do not match!");
 
