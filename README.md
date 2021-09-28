@@ -38,3 +38,6 @@ cd build
 ./load_map [path to the data super dir] [saved map path]
 ```
 click "path mode" then generate new data.
+
+## 4. SPADE
+The work in _SPADE_ dir is forked from https://github.com/NVlabs/SPADE. We modified the input and some other parts. a _postprocess.py_ is also added for synthesize the GAN generated image and rendered image. Please go to original [SPADE](https://github.com/NVlabs/SPADE) to see the training and testing of the code.
